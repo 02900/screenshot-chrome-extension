@@ -1,12 +1,13 @@
 import { Component } from '@angular/core';
-import { Format } from './app.types';
+import { Format, ICaptureScreenshot } from './app.types';
 import { resolutions } from './resolutions';
 
 const DEBUGGING_PROTOCOL_VERSION = '1.0';
 const methodEmulateDevice = 'Emulation.setDeviceMetricsOverride';
 const methodScreenshot = 'Page.captureScreenshot';
+const methodSetScrollbarsHidden = 'Emulation.setScrollbarsHidden';
 const urlPrefix = 'data:application/octet-stream;base64,';
-const delay = 800;
+const delay = 2000;
 
 @Component({
   selector: 'app-root',
@@ -22,18 +23,31 @@ export class AppComponent {
     for (let i = 0; i < resolutions.length; i++) {
       const resolution = resolutions[i];
 
+      const screenshotConfig: ICaptureScreenshot = {
+        format: this.ext,
+        fromSurface: true,
+      };
+
       chrome.tabs.query({ active: true }, (tabs) => {
         const tabId = { tabId: tabs[0].id };
         chrome.debugger.attach(tabId, DEBUGGING_PROTOCOL_VERSION);
+
+
+        chrome.debugger.sendCommand(tabId, methodSetScrollbarsHidden, { hidden: true });
+
         chrome.debugger.sendCommand(
           tabId,
           methodEmulateDevice,
           resolution,
-          () => {
+          async () => {
+
+
+            await this.timer(1000);
+
             chrome.debugger.sendCommand(
               tabId,
               methodScreenshot,
-              { format: this.ext, fromSurface: true },
+              screenshotConfig,
               (response: any) => {
                 if (chrome.runtime.lastError) {
                   chrome.debugger.detach(tabId);

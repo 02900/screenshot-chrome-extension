@@ -1,12 +1,14 @@
-const iphone5 = {
+import { IDevice } from "./app.types";
+
+const iphone5: IDevice = {
   id: 'iPhone5',
   mobile: true,
   width: 320,
-  height: 568,
+  height: 6000,
   deviceScaleFactor: 1,
 };
 
-const iphoneXR = {
+const iphoneXR: IDevice = {
   id: 'iPhoneXR',
   mobile: true,
   width: 414,
@@ -14,7 +16,7 @@ const iphoneXR = {
   deviceScaleFactor: 1,
 };
 
-const iPadMini = {
+const iPadMini: IDevice = {
   id: 'iPadMini',
   mobile: true,
   width: 768,
@@ -22,7 +24,7 @@ const iPadMini = {
   deviceScaleFactor: 1,
 };
 
-const desktopLG = {
+const desktopLG: IDevice = {
   id: 'desktopLG',
   mobile: false,
   width: 1024,
@@ -30,15 +32,15 @@ const desktopLG = {
   deviceScaleFactor: 1,
 };
 
-const desktopXL = {
+const desktopXL: IDevice = {
   id: 'desktopXL',
   mobile: false,
   width: 1366,
-  height: 968,
+  height: 2000,
   deviceScaleFactor: 1,
 };
 
-const desktopXXL = {
+const desktopXXL: IDevice = {
   id: 'desktopXXL',
   mobile: false,
   width: 1440,
@@ -46,7 +48,7 @@ const desktopXXL = {
   deviceScaleFactor: 1,
 };
 
-const desktopXXXL = {
+const desktopXXXL: IDevice = {
   id: 'desktopXXXL',
   mobile: false,
   width: 1920,
@@ -54,12 +56,6 @@ const desktopXXXL = {
   deviceScaleFactor: 1,
 };
 
-export const resolutions = [
-  iphone5,
-  iphoneXR,
-  iPadMini,
-  desktopLG,
-  desktopXL,
-  desktopXXL,
-  desktopXXXL,
+export const resolutions: IDevice[] = [
+  iphone5, desktopXL,
 ];
