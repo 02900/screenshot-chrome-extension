@@ -1,5 +1,6 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { concatMap, fromEvent, map, Observable } from 'rxjs';
+import { CanvasUtilsService } from './canvas-utils.service';
 import {
   Format,
   IDevice,
@@ -22,6 +23,8 @@ const delay = 2000;
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
+  @ViewChild('canvasElement', { static: true }) canvas!: ElementRef<HTMLCanvasElement>;
+
   private readonly ext: Format = Format.PNG;
 
   private readonly config: IScreenshot = {
@@ -40,15 +43,30 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  constructor(private readonly canvasUtils: CanvasUtilsService) { }
+
   ngOnInit(): void {
     this.currentTab.subscribe((id) => {
       this.tabId = { tabId: id };
       chrome.debugger.attach(this.tabId, DEBUGGING_PROTOCOL_VERSION);
     });
+
+    this.canvasUtils.load(this.canvas.nativeElement);
   }
 
   ngOnDestroy(): void {
     chrome.debugger.detach(this.tabId);
+  }
+
+  record() {
+    this.canvasUtils.record(1000).subscribe((x: string) => {
+      this.download({
+        filename: 'a.webm',
+        url: x
+      }).subscribe(() => {
+        console.log("HERO");
+      });
+    });
   }
 
   async generate() {
@@ -64,10 +82,10 @@ export class AppComponent implements OnInit, OnDestroy {
             const config: ICropConfig = {
               source: img,
               x: 0,
-              y: 568,
+              y: 0,
               width: 320,
               height: 568,
-            }
+            };
             return this.crop(config);
           }),
           concatMap((img: string) => {
@@ -87,7 +105,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  hideScrollbars(): Observable<void> {
+  private hideScrollbars(): Observable<void> {
     return new Observable((observer) => {
       chrome.debugger.sendCommand(
         this.tabId,
@@ -100,18 +118,15 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  resize(resolution: IDevice): Observable<void> {
+  private resize(resolution: IDevice): Observable<void> {
     return new Observable((observer) => {
-      chrome.debugger.sendCommand(
-        this.tabId,
-        emulationDevice,
-        resolution,
-        () => observer.next()
+      chrome.debugger.sendCommand(this.tabId, emulationDevice, resolution, () =>
+        observer.next()
       );
     });
   }
 
-  screenshot(screenshotConfig: IScreenshot): Observable<string> {
+  private screenshot(screenshotConfig: IScreenshot): Observable<string> {
     return new Observable((observer) => {
       chrome.debugger.sendCommand(
         this.tabId,
@@ -131,7 +146,7 @@ export class AppComponent implements OnInit, OnDestroy {
    * @return base 64 image
    */
 
-  crop(config: ICropConfig): Observable<string> {
+  private crop(config: ICropConfig): Observable<string> {
     const resize_canvas = document.createElement('canvas');
     const orig_src = new Image();
     orig_src.src = config.source;
@@ -158,7 +173,7 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  download(config: IDownloadConfig): Observable<void> {
+  private download(config: IDownloadConfig): Observable<void> {
     return new Observable((observer) => {
       chrome.downloads.download(config, () => observer.next());
     });
