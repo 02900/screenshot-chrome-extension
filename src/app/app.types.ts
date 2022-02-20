@@ -47,7 +47,6 @@ export interface ICropConfig {
 
 export interface IRecordConfig {
   canvas: HTMLCanvasElement,
-  time: number,
   images: string[],
   device: IDevice
 }

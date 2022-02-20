@@ -1,9 +1,11 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { concat, switchMap, Observable, take, tap } from 'rxjs';
+import { concat, switchMap, Observable, take, tap, of, delay } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
 import { Extension, IRecordConfig } from './app.types';
 import { devices } from './devices';
+
+const delayResize: number = 200;
 
 @Component({
   selector: 'app-root',
@@ -15,8 +17,7 @@ export class AppComponent implements OnInit {
   canvas!: ElementRef<HTMLCanvasElement>;
 
   fullScreenshot: boolean = true;
-  record!: boolean;
-  timeToRecord: number = 2000;
+  record: boolean = true;
 
   private readonly extension: Extension = Extension.PNG;
 
@@ -37,24 +38,31 @@ export class AppComponent implements OnInit {
 
       obs$.push(
         this.chromeExtension.hideScrollbars().pipe(
-          tap(() => console.log("current turn: ", device.id)),
+          tap(() => console.log('current turn: ', device.id)),
           switchMap(() =>
-            this.chromeExtension.resizeWrapper(device, this.fullScreenshot)
+            this.chromeExtension
+              .resizeWrapper(device, this.fullScreenshot)
+              .pipe(delay(delayResize))
           ),
           switchMap(() => this.chromeExtension.screenshot()),
-          switchMap((base64: string) =>
-            this.chromeExtension.cropWrapper(base64, device)
-          ),
-          switchMap((images: string[]) => {
-            const config: IRecordConfig = {
-              canvas: this.canvas.nativeElement,
-              time: this.timeToRecord,
-              images,
-              device,
-            };
+          switchMap((base64: string) => {
+            if (this.fullScreenshot)
+              return this.chromeExtension.cropWrapper(base64, device);
 
-            return this.recordCanvas.init(config);
-            // return this.chromeExtension.downloadWrapper(images, resolution);
+            return of([base64]);
+          }),
+          switchMap((images: string[]) => {
+            if (this.record) {
+              const config: IRecordConfig = {
+                canvas: this.canvas.nativeElement,
+                images,
+                device,
+              };
+
+              return this.recordCanvas.init(config);
+            }
+
+            return this.chromeExtension.downloadWrapper(images, device);
           }),
           take(1)
         )

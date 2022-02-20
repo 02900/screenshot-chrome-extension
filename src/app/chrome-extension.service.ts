@@ -119,8 +119,7 @@ export class ChromeExtensionService implements OnDestroy {
       height: device.height,
     };
 
-    const unitPercent = this.contentHeight / 100;
-    const offset = unitPercent * 0.5;
+    const offset = 5;
     const copies = (this.contentHeight - device.height) / offset;
 
     for (let i = 0; i < copies; i++) {
@@ -140,7 +139,7 @@ export class ChromeExtensionService implements OnDestroy {
    * @return base 64 image
    */
 
-  crop(config: ICropConfig): Observable<string> {
+  private crop(config: ICropConfig): Observable<string> {
     const resize_canvas = document.createElement('canvas');
     const orig_src = new Image();
     orig_src.src = config.source;
@@ -167,7 +166,7 @@ export class ChromeExtensionService implements OnDestroy {
     );
   }
 
-  downloadWrapper(urls: string[], resolution: IDevice) {
+  downloadWrapper(urls: string[], resolution: IDevice): Observable<void[]> {
     const downloads: Observable<void>[] = [];
 
     for (let i = 0; i < urls.length; i++) {

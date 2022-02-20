@@ -3,6 +3,8 @@ import { fromEvent, Observable, Subject, switchMap, take } from 'rxjs';
 import { IDownloadConfig, IRecordConfig } from './app.types';
 import { ChromeExtensionService } from './chrome-extension.service';
 
+const frameStep = 10;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -38,35 +40,36 @@ export class RecordCanvasService {
     this.images = config.images;
     this.endFrame = this.images.length - 1;
 
-    return this.loadFrames()
-      .pipe(
-        switchMap(() => {
-          this.frameAnimation();
-          return this.record(config.time);
-        }),
-        switchMap((url: string) => {
-          const configDownload: IDownloadConfig = {
-            filename: `${config.device.id}.webm`,
-            url,
-          };
+    return this.loadFrames().pipe(
+      switchMap(() => {
+        this.frameAnimation();
+        return this.record();
+      }),
+      switchMap((url: string) => {
+        const configDownload: IDownloadConfig = {
+          filename: `${config.device.id}.webm`,
+          url,
+        };
 
-          return this.chromeExtension.download(configDownload);
-        }),
-        take(1)
-      );
+        return this.chromeExtension.download(configDownload);
+      }),
+      take(1)
+    );
   }
 
-  private record(time: number): Subject<string> {
+  private record(): Subject<string> {
     const subject = new Subject<string>();
     const recordedChunks: any[] = [];
+    const second = 1000;
+    const fps = second / frameStep;
 
-    const stream = this.canvas.captureStream(25 /*fps*/);
+    const stream = this.canvas.captureStream(fps);
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType: 'video/webm',
     });
 
-    //ondataavailable will fire in interval of `time || 4000 ms`
-    mediaRecorder.start(time || 4000);
+    const animationTime = this.images.length * frameStep;
+    mediaRecorder.start(animationTime);
 
     mediaRecorder.ondataavailable = (event) => {
       recordedChunks.push(event.data);
@@ -110,7 +113,7 @@ export class RecordCanvasService {
     context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
     context?.drawImage(this.frames[this.currentFrame], 0, 0);
 
-    await this.timer(100);
+    await this.timer(frameStep);
 
     if (this.currentFrame == this.endFrame) {
       if (!this.loop) cancelAnimationFrame(this.requestID);
