@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { concat, concatMap, Observable, of, take, tap } from 'rxjs';
+import { concat, switchMap, Observable, take, tap } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
 import { Extension, IRecordConfig } from './app.types';
@@ -38,14 +38,14 @@ export class AppComponent implements OnInit {
       obs$.push(
         this.chromeExtension.hideScrollbars().pipe(
           tap(() => console.log("current turn: ", device.id)),
-          concatMap(() =>
+          switchMap(() =>
             this.chromeExtension.resizeWrapper(device, this.fullScreenshot)
           ),
-          concatMap(() => this.chromeExtension.screenshot()),
-          concatMap((base64: string) =>
+          switchMap(() => this.chromeExtension.screenshot()),
+          switchMap((base64: string) =>
             this.chromeExtension.cropWrapper(base64, device)
           ),
-          concatMap((images: string[]) => {
+          switchMap((images: string[]) => {
             const config: IRecordConfig = {
               canvas: this.canvas.nativeElement,
               time: this.timeToRecord,

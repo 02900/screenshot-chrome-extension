@@ -7,28 +7,31 @@ import { ChromeExtensionService } from './chrome-extension.service';
   providedIn: 'root',
 })
 export class RecordCanvasService {
-  private readonly timer = (ms: number) =>
-    new Promise((res) => setTimeout(res, ms));
+  readonly startFrame = 0;
+  endFrame = -1;
+  framesLoaded = 0;
+  currentFrame!: number;
+  frames: HTMLImageElement[] = [];
 
   images!: string[];
   canvas!: HTMLCanvasElement;
 
-  startFrame = 0;
-  endFrame = -1;
   loop = true;
   pingPong = true;
-
-  frames: HTMLImageElement[] = [];
-  framesLoaded = 0;
-
-  currentFrame = this.startFrame;
   forwards = true;
 
-  requestID = -1;
+  requestID!: number;
+
+  private readonly timer = (ms: number) =>
+    new Promise((res) => setTimeout(res, ms));
 
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
   init(config: IRecordConfig): Observable<void> {
+    this.requestID = -1;
+    this.framesLoaded = 0;
+    this.currentFrame = this.startFrame;
+
     this.canvas = config.canvas;
     this.canvas.setAttribute('width', config.device.width.toString());
     this.canvas.setAttribute('height', config.device.height.toString());
@@ -74,8 +77,8 @@ export class RecordCanvasService {
     };
 
     mediaRecorder.onstop = (event) => {
-      var blob = new Blob(recordedChunks, { type: 'video/webm' });
-      var url = URL.createObjectURL(blob);
+      const blob = new Blob(recordedChunks, { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
       subject.next(url);
     };
 
