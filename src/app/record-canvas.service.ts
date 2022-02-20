@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { fromEvent, Subject, switchMap, take } from 'rxjs';
-import { IDevice, IDownloadConfig } from './app.types';
+import { IDownloadConfig, IRecordConfig } from './app.types';
 import { ChromeExtensionService } from './chrome-extension.service';
 
 @Injectable({
   providedIn: 'root',
 })
-export class CanvasUtilsService {
+export class RecordCanvasService {
   private readonly timer = (ms: number) =>
     new Promise((res) => setTimeout(res, ms));
 
@@ -28,29 +28,24 @@ export class CanvasUtilsService {
 
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
-  init(
-    canvas: HTMLCanvasElement,
-    time: number,
-    images: string[],
-    resolution: IDevice
-  ) {
-    this.canvas = canvas;
-    this.images = images;
+  init(config: IRecordConfig) {
+    this.canvas = config.canvas;
+    this.images = config.images;
     this.endFrame = this.images.length - 1;
 
     this.loadFrames()
       .pipe(
         switchMap(() => {
           this.frameAnimation();
-          return this.record(time);
+          return this.record(config.time);
         }),
         switchMap((url: string) => {
-          const config: IDownloadConfig = {
-            filename: `${resolution.id}.webm`,
+          const configDownload: IDownloadConfig = {
+            filename: `${config.resolution.id}.webm`,
             url,
           };
 
-          return this.chromeExtension.download(config);
+          return this.chromeExtension.download(configDownload);
         }),
         take(1)
       )

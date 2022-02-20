@@ -8,7 +8,6 @@ export const enum Format {
   WEBP = 'webp'
 }
 
-
 export interface IDevice {
   id: string,
   width: number,
@@ -45,4 +44,11 @@ export interface ICropConfig {
   y: number
   width: number,
   height: number,
+}
+
+export interface IRecordConfig {
+  canvas: HTMLCanvasElement,
+  time: number,
+  images: string[],
+  resolution: IDevice
 }
