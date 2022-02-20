@@ -1,5 +1,12 @@
-import { Inject, Injectable, OnDestroy } from '@angular/core';
-import { fromEvent, map, Observable, forkJoin, take } from 'rxjs';
+import { Injectable, OnDestroy } from '@angular/core';
+import {
+  fromEvent,
+  map,
+  Observable,
+  forkJoin,
+  take,
+  switchMap,
+} from 'rxjs';
 import {
   ITabID,
   Format,
@@ -8,12 +15,6 @@ import {
   ICropConfig,
   IDownloadConfig,
 } from './app.types';
-
-const DEBUGGING_PROTOCOL_VERSION = '1.0';
-const emulationDevice = 'Emulation.setDeviceMetricsOverride';
-const pageScreenshot = 'Page.captureScreenshot';
-const emulationHideScrollbars = 'Emulation.setScrollbarsHidden';
-const urlPrefix = 'data:application/octet-stream;base64,';
 
 @Injectable({
   providedIn: 'root',
@@ -28,6 +29,7 @@ export class ChromeExtensionService implements OnDestroy {
 
   init(format: Format): void {
     this.format = format;
+    const DEBUGGING_PROTOCOL_VERSION = '1.0';
 
     this.currentTab().subscribe((id) => {
       this.tabId = { tabId: id };
@@ -36,10 +38,12 @@ export class ChromeExtensionService implements OnDestroy {
   }
 
   hideScrollbars(): Observable<void> {
+    const command = 'Emulation.setScrollbarsHidden';
+
     return new Observable((observer) => {
       chrome.debugger.sendCommand(
         this.tabId,
-        emulationHideScrollbars,
+        command,
         {
           hidden: true,
         },
@@ -48,15 +52,44 @@ export class ChromeExtensionService implements OnDestroy {
     });
   }
 
-  resize(resolution: IDevice): Observable<void> {
+  resizeWrapper(
+    resolution: IDevice,
+    fullScreenshot?: boolean
+  ): Observable<void> {
+    if (!fullScreenshot) return this.resize(resolution);
+
+    return this.resize(resolution).pipe(
+      switchMap(() => this.currentHeight()),
+      switchMap((height: number) => {
+        resolution.height = height;
+        return this.resize(resolution);
+      })
+    );
+  }
+
+  private resize(resolution: IDevice): Observable<void> {
+    const command = 'Emulation.setDeviceMetricsOverride';
+
     return new Observable((observer) => {
-      chrome.debugger.sendCommand(this.tabId, emulationDevice, resolution, () =>
+      chrome.debugger.sendCommand(this.tabId, command, resolution, () =>
         observer.next()
       );
     });
   }
 
+  currentHeight(): Observable<number> {
+    const command = 'Page.getLayoutMetrics';
+
+    return new Observable((observer) => {
+      chrome.debugger.sendCommand(this.tabId, command, undefined, (x: any) =>
+        observer.next(x.cssContentSize.height)
+      );
+    });
+  }
+
   screenshot(): Observable<string> {
+    const command = 'Page.captureScreenshot';
+
     const config: IScreenshot = {
       format: this.format,
       fromSurface: true,
@@ -65,7 +98,7 @@ export class ChromeExtensionService implements OnDestroy {
     return new Observable((observer) => {
       chrome.debugger.sendCommand(
         this.tabId,
-        pageScreenshot,
+        command,
         config,
         (response: any) => observer.next(response.data)
       );
@@ -73,6 +106,8 @@ export class ChromeExtensionService implements OnDestroy {
   }
 
   cropWrapper(base64: string): Observable<string[]> {
+    const urlPrefix = 'data:application/octet-stream;base64,';
+
     const crops$: Observable<string>[] = [];
     const img = `${urlPrefix}${base64}`;
 

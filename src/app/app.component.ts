@@ -16,6 +16,8 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
+  fullScreenshot: boolean = true;
+  record!: boolean;
   timeToRecord: number = 2000;
 
   private readonly format: Format = Format.PNG;
@@ -39,7 +41,9 @@ export class AppComponent implements OnInit {
       this.chromeExtension
         .hideScrollbars()
         .pipe(
-          concatMap(() => this.chromeExtension.resize(resolution)),
+          concatMap(() =>
+            this.chromeExtension.resizeWrapper(resolution, this.fullScreenshot)
+          ),
           concatMap(() => this.chromeExtension.screenshot()),
           concatMap((base64: string) =>
             this.chromeExtension.cropWrapper(base64)
