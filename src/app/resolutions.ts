@@ -57,5 +57,6 @@ const desktopXXXL: IDevice = {
 };
 
 export const resolutions: IDevice[] = [
-  iphone5, desktopXL,
+  iphone5,
+  desktopLG
 ];

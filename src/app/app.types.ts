@@ -13,7 +13,7 @@ export interface IDevice {
   mobile: boolean,
 }
 
-export interface ICaptureScreenshot {
+export interface IScreenshot {
   format?: Format,
   quality?: number,
   clip?: IViewport,
@@ -27,4 +27,18 @@ interface IViewport {
   width: number,
   height: number,
   scale: number,
+}
+
+
+export interface IDownloadConfig {
+  filename: string,
+  url: string,
+}
+
+export interface ICropConfig {
+  source: string,
+  x: number,
+  y: number
+  width: number,
+  height: number,
 }
