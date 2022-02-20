@@ -49,5 +49,5 @@ export interface IRecordConfig {
   canvas: HTMLCanvasElement,
   time: number,
   images: string[],
-  resolution: IDevice
+  device: IDevice
 }

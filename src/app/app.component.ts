@@ -1,11 +1,9 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { concatMap, of } from 'rxjs';
+import { concat, concatMap, Observable, of, take, tap } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
 import { Extension, IRecordConfig } from './app.types';
 import { devices } from './devices';
-
-const delay = 2000;
 
 @Component({
   selector: 'app-root',
@@ -16,19 +14,11 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
-  canvasSize = {
-    width: 0,
-    height: 0
-  }
-
   fullScreenshot: boolean = true;
   record!: boolean;
   timeToRecord: number = 2000;
 
   private readonly extension: Extension = Extension.PNG;
-
-  private readonly timer = (ms: number) =>
-    new Promise((res) => setTimeout(res, ms));
 
   constructor(
     private readonly recordCanvas: RecordCanvasService,
@@ -40,17 +30,14 @@ export class AppComponent implements OnInit {
   }
 
   async generate() {
+    const obs$: Observable<any>[] = [];
+
     for (let i = 0; i < devices.length; i++) {
       const device = devices[i];
 
-      this.canvasSize = {
-        width: device.width,
-        height: device.height
-      }
-
-      this.chromeExtension
-        .hideScrollbars()
-        .pipe(
+      obs$.push(
+        this.chromeExtension.hideScrollbars().pipe(
+          tap(() => console.log("current turn: ", device.id)),
           concatMap(() =>
             this.chromeExtension.resizeWrapper(device, this.fullScreenshot)
           ),
@@ -63,18 +50,17 @@ export class AppComponent implements OnInit {
               canvas: this.canvas.nativeElement,
               time: this.timeToRecord,
               images,
-              resolution: device,
+              device,
             };
 
-            this.recordCanvas.init(config);
-
-            return of(true);
+            return this.recordCanvas.init(config);
             // return this.chromeExtension.downloadWrapper(images, resolution);
-          })
+          }),
+          take(1)
         )
-        .subscribe();
-
-      await this.timer(delay);
+      );
     }
+
+    concat(...obs$).subscribe();
   }
 }

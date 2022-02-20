@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { fromEvent, Subject, switchMap, take } from 'rxjs';
+import { fromEvent, Observable, Subject, switchMap, take } from 'rxjs';
 import { IDownloadConfig, IRecordConfig } from './app.types';
 import { ChromeExtensionService } from './chrome-extension.service';
 
@@ -28,12 +28,14 @@ export class RecordCanvasService {
 
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
-  init(config: IRecordConfig) {
+  init(config: IRecordConfig): Observable<void> {
     this.canvas = config.canvas;
+    this.canvas.setAttribute('width', config.device.width.toString());
+    this.canvas.setAttribute('height', config.device.height.toString());
     this.images = config.images;
     this.endFrame = this.images.length - 1;
 
-    this.loadFrames()
+    return this.loadFrames()
       .pipe(
         switchMap(() => {
           this.frameAnimation();
@@ -41,15 +43,14 @@ export class RecordCanvasService {
         }),
         switchMap((url: string) => {
           const configDownload: IDownloadConfig = {
-            filename: `${config.resolution.id}.webm`,
+            filename: `${config.device.id}.webm`,
             url,
           };
 
           return this.chromeExtension.download(configDownload);
         }),
         take(1)
-      )
-      .subscribe();
+      );
   }
 
   private record(time: number): Subject<string> {
