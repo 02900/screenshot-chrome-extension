@@ -1,5 +1,19 @@
-import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { concatMap, fromEvent, map, Observable } from 'rxjs';
+import {
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
+import {
+  concatMap,
+  fromEvent,
+  map,
+  Observable,
+  forkJoin,
+  take,
+  of,
+} from 'rxjs';
 import { CanvasUtilsService } from './canvas-utils.service';
 import {
   Format,
@@ -23,7 +37,10 @@ const delay = 2000;
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  @ViewChild('canvasElement', { static: true }) canvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('canvasElement', { static: true })
+  canvas!: ElementRef<HTMLCanvasElement>;
+
+  sequence: string[] = [];
 
   private readonly ext: Format = Format.PNG;
 
@@ -50,23 +67,10 @@ export class AppComponent implements OnInit, OnDestroy {
       this.tabId = { tabId: id };
       chrome.debugger.attach(this.tabId, DEBUGGING_PROTOCOL_VERSION);
     });
-
-    this.canvasUtils.load(this.canvas.nativeElement);
   }
 
   ngOnDestroy(): void {
     chrome.debugger.detach(this.tabId);
-  }
-
-  record() {
-    this.canvasUtils.record(1000).subscribe((x: string) => {
-      this.download({
-        filename: 'a.webm',
-        url: x
-      }).subscribe(() => {
-        console.log("HERO");
-      });
-    });
   }
 
   async generate() {
@@ -77,29 +81,15 @@ export class AppComponent implements OnInit, OnDestroy {
         .pipe(
           concatMap(() => this.resize(resolution)),
           concatMap(() => this.screenshot(this.config)),
-          concatMap((base64: string) => {
-            const img = `${urlPrefix}${base64}`;
-            const config: ICropConfig = {
-              source: img,
-              x: 0,
-              y: 0,
-              width: 320,
-              height: 568,
-            };
-            return this.crop(config);
-          }),
-          concatMap((img: string) => {
-            const config: IDownloadConfig = {
-              filename: `${resolution.id}.${this.ext}`,
-              url: img,
-            };
-
-            return this.download(config);
+          concatMap((base64: string) => this.cropWrapper(base64)),
+          concatMap((sequence: string[]) => {
+            this.sequence = sequence;
+            this.record();
+            return of(true);
+            // return this.downloadWrapper(sequence, resolution);
           })
         )
-        .subscribe(() => {
-          console.log('Finish Him!');
-        });
+        .subscribe();
 
       await this.timer(delay);
     }
@@ -135,6 +125,32 @@ export class AppComponent implements OnInit, OnDestroy {
         (response: any) => observer.next(response.data)
       );
     });
+  }
+
+  private cropWrapper(base64: string): Observable<string[]> {
+    const crops$: Observable<string>[] = [];
+    const img = `${urlPrefix}${base64}`;
+
+    const config: ICropConfig = {
+      source: img,
+      x: 0,
+      y: 0,
+      width: 320,
+      height: 568,
+    };
+
+    const totalHeigth = 6000;
+    const deviceHeight = 568;
+    const unitPercent = totalHeigth / 100;
+    const offset = unitPercent * 0.5;
+    const copies = (totalHeigth - deviceHeight) / offset;
+
+    for (let i = 0; i < copies; i++) {
+      config.y = 0 + i * offset;
+      crops$.push(this.crop({ ...config }).pipe(take(1)));
+    }
+
+    return forkJoin(crops$);
   }
 
   /**
@@ -173,9 +189,37 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  private downloadWrapper(sequence: string[], resolution: IDevice) {
+    const downloads: Observable<void>[] = [];
+
+    for (let i = 0; i < sequence.length; i++) {
+      const img = sequence[i];
+
+      const config: IDownloadConfig = {
+        filename: `${resolution.id}.${this.ext}`,
+        url: img,
+      };
+
+      downloads.push(this.download(config).pipe(take(1)));
+    }
+
+    return forkJoin(downloads);
+  }
+
   private download(config: IDownloadConfig): Observable<void> {
     return new Observable((observer) => {
       chrome.downloads.download(config, () => observer.next());
+    });
+  }
+
+  private record() {
+    this.canvasUtils.load(this.canvas.nativeElement, this.sequence);
+
+    this.canvasUtils.record(10000).subscribe((x: string) => {
+      this.download({
+        filename: 'a.webm',
+        url: x
+      }).subscribe();
     });
   }
 }
