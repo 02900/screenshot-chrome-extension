@@ -1,3 +1,7 @@
+export interface ITabID {
+  tabId: number
+}
+
 export const enum Format {
   JPEG = 'jpeg',
   PNG = 'png',

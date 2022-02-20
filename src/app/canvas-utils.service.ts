@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { fromEvent, Subject, take } from 'rxjs';
+import { fromEvent, Subject, switchMap, take } from 'rxjs';
+import { IDevice, IDownloadConfig } from './app.types';
+import { ChromeExtensionService } from './chrome-extension.service';
 
 @Injectable({
   providedIn: 'root',
@@ -8,8 +10,7 @@ export class CanvasUtilsService {
   private readonly timer = (ms: number) =>
     new Promise((res) => setTimeout(res, ms));
 
-
-  sequence!: string[];
+  images!: string[];
   canvas!: HTMLCanvasElement;
 
   startFrame = 0;
@@ -25,20 +26,44 @@ export class CanvasUtilsService {
 
   requestID = -1;
 
-  load(canvas: HTMLCanvasElement, sequence: any[]) {
+  constructor(private readonly chromeExtension: ChromeExtensionService) { }
+
+  init(
+    canvas: HTMLCanvasElement,
+    time: number,
+    images: string[],
+    resolution: IDevice
+  ) {
     this.canvas = canvas;
-    this.sequence = sequence;
-    this.endFrame = this.sequence.length - 1;
-    this.loadFrames().pipe(take(1)).subscribe(() => this.frameAnimation());
+    this.images = images;
+    this.endFrame = this.images.length - 1;
+
+    this.loadFrames()
+      .pipe(
+        switchMap(() => {
+          this.frameAnimation();
+          return this.record(time);
+        }),
+        switchMap((url: string) => {
+          const config: IDownloadConfig = {
+            filename: `${resolution.id}.webm`,
+            url,
+          };
+
+          return this.chromeExtension.download(config);
+        }),
+        take(1)
+      )
+      .subscribe();
   }
 
-  record(time: number): Subject<string> {
+  private record(time: number): Subject<string> {
     const subject = new Subject<string>();
     const recordedChunks: any[] = [];
 
     const stream = this.canvas.captureStream(25 /*fps*/);
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: "video/webm"
+      mimeType: 'video/webm',
     });
 
     //ondataavailable will fire in interval of `time || 4000 ms`
@@ -50,13 +75,13 @@ export class CanvasUtilsService {
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.stop();
       }
-    }
+    };
 
     mediaRecorder.onstop = (event) => {
-      var blob = new Blob(recordedChunks, { type: "video/webm" });
+      var blob = new Blob(recordedChunks, { type: 'video/webm' });
       var url = URL.createObjectURL(blob);
       subject.next(url);
-    }
+    };
 
     return subject;
   }
@@ -66,7 +91,7 @@ export class CanvasUtilsService {
 
     for (let i = this.startFrame; i <= this.endFrame; i++) {
       this.frames[i] = new Image();
-      this.frames[i].src = this.sequence[i];
+      this.frames[i].src = this.images[i];
 
       fromEvent(this.frames[i], 'load').subscribe(() => {
         this.framesLoaded++;

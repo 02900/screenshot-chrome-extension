@@ -4,7 +4,7 @@ const iphone5: IDevice = {
   id: 'iPhone5',
   mobile: true,
   width: 320,
-  height: 6000,
+  height: 568,
   deviceScaleFactor: 1,
 };
 
@@ -28,7 +28,7 @@ const desktopLG: IDevice = {
   id: 'desktopLG',
   mobile: false,
   width: 1024,
-  height: 768,
+  height: 576,
   deviceScaleFactor: 1,
 };
 
@@ -36,7 +36,7 @@ const desktopXL: IDevice = {
   id: 'desktopXL',
   mobile: false,
   width: 1366,
-  height: 2000,
+  height: 768,
   deviceScaleFactor: 1,
 };
 
@@ -44,7 +44,7 @@ const desktopXXL: IDevice = {
   id: 'desktopXXL',
   mobile: false,
   width: 1440,
-  height: 1024,
+  height: 900,
   deviceScaleFactor: 1,
 };
 
