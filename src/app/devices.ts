@@ -56,6 +56,6 @@ const desktopXXXL: IDevice = {
   deviceScaleFactor: 1,
 };
 
-export const resolutions: IDevice[] = [
+export const devices: IDevice[] = [
   iphone5,
 ];

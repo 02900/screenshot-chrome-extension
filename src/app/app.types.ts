@@ -2,7 +2,7 @@ export interface ITabID {
   tabId: number
 }
 
-export const enum Format {
+export const enum Extension {
   JPEG = 'jpeg',
   PNG = 'png',
   WEBP = 'webp'
@@ -17,7 +17,7 @@ export interface IDevice {
 }
 
 export interface IScreenshot {
-  format?: Format,
+  format?: Extension,
   quality?: number,
   clip?: IViewport,
   fromSurface?: boolean,
@@ -31,7 +31,6 @@ interface IViewport {
   height: number,
   scale: number,
 }
-
 
 export interface IDownloadConfig {
   filename: string,

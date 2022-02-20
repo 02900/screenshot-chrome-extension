@@ -9,7 +9,7 @@ import {
 } from 'rxjs';
 import {
   ITabID,
-  Format,
+  Extension,
   IDevice,
   IScreenshot,
   ICropConfig,
@@ -21,14 +21,15 @@ import {
 })
 export class ChromeExtensionService implements OnDestroy {
   private tabId!: ITabID;
-  private format!: Format;
+  private extension!: Extension;
+  private contentHeight!: number;
 
   ngOnDestroy(): void {
     chrome.debugger.detach(this.tabId);
   }
 
-  init(format: Format): void {
-    this.format = format;
+  init(format: Extension): void {
+    this.extension = format;
     const DEBUGGING_PROTOCOL_VERSION = '1.0';
 
     this.currentTab().subscribe((id) => {
@@ -53,25 +54,26 @@ export class ChromeExtensionService implements OnDestroy {
   }
 
   resizeWrapper(
-    resolution: IDevice,
+    device: IDevice,
     fullScreenshot?: boolean
   ): Observable<void> {
-    if (!fullScreenshot) return this.resize(resolution);
+    if (!fullScreenshot) return this.resize(device);
 
-    return this.resize(resolution).pipe(
+    return this.resize(device).pipe(
       switchMap(() => this.currentHeight()),
       switchMap((height: number) => {
-        resolution.height = height;
-        return this.resize(resolution);
+        this.contentHeight = height;
+        const newResolution = { ...device, height }
+        return this.resize(newResolution);
       })
     );
   }
 
-  private resize(resolution: IDevice): Observable<void> {
+  private resize(device: IDevice): Observable<void> {
     const command = 'Emulation.setDeviceMetricsOverride';
 
     return new Observable((observer) => {
-      chrome.debugger.sendCommand(this.tabId, command, resolution, () =>
+      chrome.debugger.sendCommand(this.tabId, command, device, () =>
         observer.next()
       );
     });
@@ -89,9 +91,8 @@ export class ChromeExtensionService implements OnDestroy {
 
   screenshot(): Observable<string> {
     const command = 'Page.captureScreenshot';
-
     const config: IScreenshot = {
-      format: this.format,
+      format: this.extension,
       fromSurface: true,
     };
 
@@ -105,9 +106,8 @@ export class ChromeExtensionService implements OnDestroy {
     });
   }
 
-  cropWrapper(base64: string): Observable<string[]> {
+  cropWrapper(base64: string, device: IDevice): Observable<string[]> {
     const urlPrefix = 'data:application/octet-stream;base64,';
-
     const crops$: Observable<string>[] = [];
     const img = `${urlPrefix}${base64}`;
 
@@ -115,15 +115,13 @@ export class ChromeExtensionService implements OnDestroy {
       source: img,
       x: 0,
       y: 0,
-      width: 320,
-      height: 568,
+      width: device.width,
+      height: device.height,
     };
 
-    const totalHeigth = 6000;
-    const deviceHeight = 568;
-    const unitPercent = totalHeigth / 100;
+    const unitPercent = this.contentHeight / 100;
     const offset = unitPercent * 0.5;
-    const copies = (totalHeigth - deviceHeight) / offset;
+    const copies = (this.contentHeight - device.height) / offset;
 
     for (let i = 0; i < copies; i++) {
       config.y = 0 + i * offset;
@@ -174,7 +172,7 @@ export class ChromeExtensionService implements OnDestroy {
 
     for (let i = 0; i < urls.length; i++) {
       const config: IDownloadConfig = {
-        filename: `${resolution.id}.${this.format}`,
+        filename: `${resolution.id}.${this.extension}`,
         url: urls[i],
       };
 
