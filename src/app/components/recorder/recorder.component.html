@@ -1,35 +1,47 @@
 <p>Recorder</p>
 
-<form *ngIf="recordStatus === 'readyToStart'" [formGroup]="formRecorder" (ngSubmit)="submit()">
-  <div class="form-element">
-    <label for="scale">Scale factor</label>
-    <input #scaleFactor id="scaleFactor" type="range" formControlName="scaleFactor" min="0.25" max="1" step="0.01" />
-    <span>{{ scaleFactor.value }}</span>
+<ng-container [ngSwitch]="recordStatus">
+  <form *ngSwitchCase="0" [formGroup]="formRecorder" (ngSubmit)="submit()">
+    <div class="form-element">
+      <label for="scale">Scale factor</label>
+      <input #scaleFactor id="scaleFactor" type="range" formControlName="scaleFactor" min="0.25" max="1" step="0.01" />
+      <span>{{ scaleFactor.value }}</span>
+    </div>
+
+    <div class="form-element">
+      <label for="offset">Offset</label>
+      <input #offset id="offset" type="range" formControlName="offset" min="1" max="100" step="0.01" />
+      <span>{{ offset.value }}</span>
+    </div>
+
+    <div class="form-element">
+      <label for="fps">FPS</label>
+      <input #fps id="fps" type="range" formControlName="fps" min="1" max="60" step="0.01" />
+      <span>{{ fps.value }}</span>
+    </div>
+
+    <button type="submit">Record</button>
+  </form>
+
+  <div *ngSwitchCase="1">
+    <p>Taking screenshot:</p>
+    <app-loading-bar></app-loading-bar>
   </div>
 
-  <div class="form-element">
-    <label for="offset">Offset</label>
-    <input #offset id="offset" type="range" formControlName="offset" min="1" max="100" step="0.01" />
-    <span>{{ offset.value }}</span>
+  <div *ngSwitchCase="2" class="form-element">
+    <label for="processingFrames">Processing frames: </label>
+    <progress *ngIf="chromeExtension.currentFrame$ | async as progress" id="processingFrames"
+      [max]="chromeExtension.totalFrames$ | async" [value]="progress">
+      {{ progress }}%
+    </progress>
   </div>
 
-  <div class="form-element">
-    <label for="fps">FPS</label>
-    <input #fps id="fps" type="range" formControlName="fps" min="1" max="120" step="0.01" />
-    <span>{{ fps.value }}</span>
+
+  <div *ngSwitchCase="3" class="form-element">
+    <label for="generatingVideo">Generating video: </label>
+    <progress *ngIf="chromeExtension.currentFrame$ | async as progress" id="generatingVideo"
+      [max]="chromeExtension.totalFrames$ | async" [value]="progress">
+      {{ progress }}%
+    </progress>
   </div>
-
-  <button type="submit">Record</button>
-</form>
-
-<div *ngIf="recordStatus === 'preprocessing'">
-  <p>preprocessing</p>
-  <app-loading-bar></app-loading-bar>
-</div>
-
-<div class="form-element">
-  <label for="progress">Progress</label>
-  <progress id="progress" [max]="cropListener.total$ | async" [value]="cropListener.current$ | async">
-    {{ progress }}%
-  </progress>
-</div>
+</ng-container>

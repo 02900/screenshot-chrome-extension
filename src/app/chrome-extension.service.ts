@@ -3,6 +3,7 @@ import {
   fromEvent,
   map,
   Observable,
+  Subject,
   forkJoin,
   take,
   switchMap,
@@ -10,8 +11,8 @@ import {
   of,
   concat,
   toArray,
+  BehaviorSubject,
 } from 'rxjs';
-import { CropListenerService } from './crop-listener.service';
 import {
   ITabID,
   Extension,
@@ -25,12 +26,12 @@ import {
   providedIn: 'root',
 })
 export class ChromeExtensionService implements OnDestroy {
+  readonly totalFrames$: BehaviorSubject<number> = new BehaviorSubject(0);
+  readonly currentFrame$: BehaviorSubject<number> = new BehaviorSubject(0);
+
   private tabId!: ITabID;
   private extension!: Extension;
   private contentHeight!: number;
-  private counterLoaded!: number;
-
-  constructor(readonly cropListener: CropListenerService) { }
 
   ngOnDestroy(): void {
     this.detach();
@@ -41,7 +42,6 @@ export class ChromeExtensionService implements OnDestroy {
   }
 
   init(format: Extension): void {
-    this.counterLoaded = 0;
     this.extension = format;
 
     chrome.runtime.connect({ name: 'popup' });
@@ -121,12 +121,13 @@ export class ChromeExtensionService implements OnDestroy {
   cropWrapper(
     base64: string,
     device: IDevice,
-    offset: number = 5
+    offset: number = 16
   ): Observable<string[]> {
     const urlPrefix = 'data:application/octet-stream;base64,';
     const crops$: Observable<string>[] = [];
     const img = `${urlPrefix}${base64}`;
     const scaleFactor = device.deviceScaleFactor;
+    let counter: number = 0;
 
     const config: ICropConfig = {
       source: img,
@@ -139,12 +140,12 @@ export class ChromeExtensionService implements OnDestroy {
     const frames =
       ((this.contentHeight - device.height) * scaleFactor) / offset;
 
-    this.cropListener.total$.next(frames);
+    this.totalFrames$.next(frames);
 
     for (let i = 0; i < frames; i++) {
       config.y = 0 + i * offset;
       crops$.push(this.crop({ ...config }).pipe(
-        tap(() => this.cropListener.current$.next(++this.counterLoaded)),
+        tap(() => this.currentFrame$.next(++counter)),
         take(1)));
     }
 

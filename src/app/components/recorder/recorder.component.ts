@@ -8,7 +8,7 @@ import {
   OnInit,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
-import { CropListenerService } from '../../crop-listener.service';
+import { ChromeExtensionService } from '../../chrome-extension.service';
 import { IRecorderConfig, RecordStatus } from '../../app.types';
 
 @Component({
@@ -18,10 +18,9 @@ import { IRecorderConfig, RecordStatus } from '../../app.types';
   changeDetection: ChangeDetectionStrategy.Default,
 })
 export class RecorderComponent implements OnInit {
-  @Input() progress: number = 0;
   @Output() requestRecord = new EventEmitter<IRecorderConfig>();
 
-  recordStatus: RecordStatus = 'readyToStart';
+  recordStatus: RecordStatus = RecordStatus.readyToStart;
 
   readonly formRecorder = this.fb.group({
     scaleFactor: [0.6, Validators.required],
@@ -30,20 +29,21 @@ export class RecorderComponent implements OnInit {
   });
 
   constructor(
-    readonly cropListener: CropListenerService,
+    readonly chromeExtension: ChromeExtensionService,
     private readonly fb: FormBuilder,
     private readonly cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
-    this.cropListener.current$.subscribe(() => {
-      if (this.recordStatus === 'preprocessing') this.recordStatus = 'inProgress';
+    this.chromeExtension.currentFrame$.subscribe(() => {
+      if (this.recordStatus === RecordStatus.takingScreenshot)
+        this.recordStatus = RecordStatus.processingFrames;
       this.cdr.detectChanges();
     });
   }
 
   submit() {
     this.requestRecord.emit(this.formRecorder.value);
-    this.recordStatus = 'preprocessing';
+    this.recordStatus = RecordStatus.takingScreenshot;
   }
 }

@@ -66,7 +66,12 @@ export interface ICaptureConfig {
   fps?: number,
 }
 
-export type RecordStatus = 'readyToStart' | 'preprocessing' | 'inProgress';
+export const enum RecordStatus {
+  readyToStart,
+  takingScreenshot,
+  processingFrames,
+  generatingVideo,
+}
 
 export interface IRecorderConfig {
   scaleFactor: number,
