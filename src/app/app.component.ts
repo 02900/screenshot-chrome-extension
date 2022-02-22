@@ -2,10 +2,16 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { concat, switchMap, Observable, take, tap, of, delay } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
-import { Extension, IRecordConfig } from './app.types';
+import {
+  Extension,
+  IRecordInput,
+  IRecorderConfig,
+  CaptureType,
+  ICaptureConfig,
+} from './app.types';
 import { devices } from './devices';
 
-const delayResize: number = 200;
+const delayResize: number = 300;
 
 @Component({
   selector: 'app-root',
@@ -15,9 +21,6 @@ const delayResize: number = 200;
 export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
-
-  fullScreenshot: boolean = true;
-  record: boolean = true;
 
   private readonly extension: Extension = Extension.PNG;
 
@@ -30,33 +33,55 @@ export class AppComponent implements OnInit {
     this.chromeExtension.init(this.extension);
   }
 
-  async generate() {
+  generateRecord(config: IRecorderConfig) {
+    const captureConfig: ICaptureConfig = {
+      type: CaptureType.RECORD,
+      scaleFactor: config.scaleFactor,
+      offset: config.offset,
+      fps: config.fps,
+    }
+
+    this.generate(captureConfig);
+  }
+
+  async generate(captureConfig: ICaptureConfig) {
     const obs$: Observable<any>[] = [];
 
     for (let i = 0; i < devices.length; i++) {
       const device = devices[i];
+      device.deviceScaleFactor = captureConfig.scaleFactor;
 
       obs$.push(
         this.chromeExtension.hideScrollbars().pipe(
           tap(() => console.log('current turn: ', device.id)),
-          switchMap(() =>
-            this.chromeExtension
-              .resizeWrapper(device, this.fullScreenshot)
-              .pipe(delay(delayResize))
-          ),
+          switchMap(() => {
+            const resizeToFullScreen =
+              captureConfig.type === CaptureType.FULLSIZE_SCREENSHOT ||
+              captureConfig.type === CaptureType.FRAMES ||
+              captureConfig.type === CaptureType.RECORD;
+
+            return this.chromeExtension
+              .resizeWrapper(device, resizeToFullScreen)
+              .pipe(delay(delayResize));
+          }),
           switchMap(() => this.chromeExtension.screenshot()),
           switchMap((base64: string) => {
-            if (this.fullScreenshot)
-              return this.chromeExtension.cropWrapper(base64, device);
+            const toCrop =
+              captureConfig.type === CaptureType.RECORD ||
+              captureConfig.type === CaptureType.FRAMES;
+
+            if (toCrop)
+              return this.chromeExtension.cropWrapper(base64, device, captureConfig.offset);
 
             return of([base64]);
           }),
           switchMap((images: string[]) => {
-            if (this.record) {
-              const config: IRecordConfig = {
+            if (captureConfig.type === CaptureType.RECORD) {
+              const config: IRecordInput = {
                 canvas: this.canvas.nativeElement,
                 images,
                 device,
+                fps: captureConfig.fps ?? 10
               };
 
               return this.recordCanvas.init(config);
@@ -69,6 +94,6 @@ export class AppComponent implements OnInit {
       );
     }
 
-    concat(...obs$).subscribe();
+    concat(...obs$).subscribe(() => this.chromeExtension.detach());
   }
 }

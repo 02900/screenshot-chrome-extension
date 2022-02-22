@@ -45,8 +45,31 @@ export interface ICropConfig {
   height: number,
 }
 
-export interface IRecordConfig {
+export interface IRecordInput {
   canvas: HTMLCanvasElement,
   images: string[],
-  device: IDevice
+  device: IDevice,
+  fps: number
+}
+
+export const enum CaptureType {
+  SCREENSHOT,
+  FULLSIZE_SCREENSHOT,
+  FRAMES,
+  RECORD,
+}
+
+export interface ICaptureConfig {
+  type: CaptureType,
+  scaleFactor: number,
+  offset?: number,
+  fps?: number,
+}
+
+export type RecordStatus = 'readyToStart' | 'preprocessing' | 'inProgress';
+
+export interface IRecorderConfig {
+  scaleFactor: number,
+  offset: number,
+  fps: number,
 }

@@ -1,18 +1,20 @@
 import { Injectable } from '@angular/core';
 import { fromEvent, Observable, Subject, switchMap, take } from 'rxjs';
-import { IDownloadConfig, IRecordConfig } from './app.types';
+import { IDownloadConfig, IRecordInput } from './app.types';
 import { ChromeExtensionService } from './chrome-extension.service';
 
-const frameStep = 10;
+const ONE_SECOND = 1000;
 
 @Injectable({
   providedIn: 'root',
 })
 export class RecordCanvasService {
   readonly startFrame = 0;
-  endFrame = -1;
-  framesLoaded = 0;
+  endFrame!: number;
+  framesLoaded!: number;
   currentFrame!: number;
+  frameStep!: number;
+  fps!: number;
   frames: HTMLImageElement[] = [];
 
   images!: string[];
@@ -29,16 +31,25 @@ export class RecordCanvasService {
 
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
-  init(config: IRecordConfig): Observable<void> {
+  init(config: IRecordInput): Observable<void> {
     this.requestID = -1;
+    this.images = config.images;
+
     this.framesLoaded = 0;
     this.currentFrame = this.startFrame;
+    this.endFrame = this.images.length - 1;
+
+    this.fps = config.fps;
+    this.frameStep = ONE_SECOND / this.fps;
+
+    const device = config.device;
+    const scaleFactor = device.deviceScaleFactor;
+    const width = device.width * scaleFactor;
+    const height = device.height * scaleFactor;
 
     this.canvas = config.canvas;
-    this.canvas.setAttribute('width', config.device.width.toString());
-    this.canvas.setAttribute('height', config.device.height.toString());
-    this.images = config.images;
-    this.endFrame = this.images.length - 1;
+    this.canvas.setAttribute('width', width.toString());
+    this.canvas.setAttribute('height', height.toString());
 
     return this.loadFrames().pipe(
       switchMap(() => {
@@ -60,15 +71,13 @@ export class RecordCanvasService {
   private record(): Subject<string> {
     const subject = new Subject<string>();
     const recordedChunks: any[] = [];
-    const second = 1000;
-    const fps = second / frameStep;
 
-    const stream = this.canvas.captureStream(fps);
+    const stream = this.canvas.captureStream(this.fps);
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType: 'video/webm',
     });
 
-    const animationTime = this.images.length * frameStep;
+    const animationTime = this.images.length * this.frameStep;
     mediaRecorder.start(animationTime);
 
     mediaRecorder.ondataavailable = (event) => {
@@ -113,7 +122,7 @@ export class RecordCanvasService {
     context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
     context?.drawImage(this.frames[this.currentFrame], 0, 0);
 
-    await this.timer(frameStep);
+    await this.timer(this.frameStep);
 
     if (this.currentFrame == this.endFrame) {
       if (!this.loop) cancelAnimationFrame(this.requestID);

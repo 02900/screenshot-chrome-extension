@@ -6,7 +6,12 @@ import {
   forkJoin,
   take,
   switchMap,
+  tap,
+  of,
+  concat,
+  toArray,
 } from 'rxjs';
+import { CropListenerService } from './crop-listener.service';
 import {
   ITabID,
   Extension,
@@ -23,15 +28,25 @@ export class ChromeExtensionService implements OnDestroy {
   private tabId!: ITabID;
   private extension!: Extension;
   private contentHeight!: number;
+  private counterLoaded!: number;
+
+  constructor(readonly cropListener: CropListenerService) { }
 
   ngOnDestroy(): void {
+    this.detach();
+  }
+
+  detach() {
     chrome.debugger.detach(this.tabId);
   }
 
   init(format: Extension): void {
+    this.counterLoaded = 0;
     this.extension = format;
-    const DEBUGGING_PROTOCOL_VERSION = '1.0';
 
+    chrome.runtime.connect({ name: 'popup' });
+
+    const DEBUGGING_PROTOCOL_VERSION = '1.0';
     this.currentTab().subscribe((id) => {
       this.tabId = { tabId: id };
       chrome.debugger.attach(this.tabId, DEBUGGING_PROTOCOL_VERSION);
@@ -53,17 +68,14 @@ export class ChromeExtensionService implements OnDestroy {
     });
   }
 
-  resizeWrapper(
-    device: IDevice,
-    fullScreenshot?: boolean
-  ): Observable<void> {
+  resizeWrapper(device: IDevice, fullScreenshot?: boolean): Observable<void> {
     if (!fullScreenshot) return this.resize(device);
 
     return this.resize(device).pipe(
       switchMap(() => this.currentHeight()),
       switchMap((height: number) => {
         this.contentHeight = height;
-        const newResolution = { ...device, height }
+        const newResolution = { ...device, height };
         return this.resize(newResolution);
       })
     );
@@ -106,28 +118,37 @@ export class ChromeExtensionService implements OnDestroy {
     });
   }
 
-  cropWrapper(base64: string, device: IDevice): Observable<string[]> {
+  cropWrapper(
+    base64: string,
+    device: IDevice,
+    offset: number = 5
+  ): Observable<string[]> {
     const urlPrefix = 'data:application/octet-stream;base64,';
-    const crops$: Observable<string>[] = [];
+    let crops$: Observable<string>[] = [];
     const img = `${urlPrefix}${base64}`;
+    const scaleFactor = device.deviceScaleFactor;
 
     const config: ICropConfig = {
       source: img,
       x: 0,
       y: 0,
-      width: device.width,
-      height: device.height,
+      width: device.width * scaleFactor,
+      height: device.height * scaleFactor,
     };
 
-    const offset = 5;
-    const copies = (this.contentHeight - device.height) / offset;
+    const frames =
+      ((this.contentHeight - device.height) * scaleFactor) / offset;
 
-    for (let i = 0; i < copies; i++) {
+    this.cropListener.total$.next(frames);
+
+    for (let i = 0; i < frames; i++) {
       config.y = 0 + i * offset;
-      crops$.push(this.crop({ ...config }).pipe(take(1)));
+      crops$.push(this.crop({ ...config }).pipe(
+        tap(() => this.cropListener.current$.next(++this.counterLoaded)),
+        take(1)));
     }
 
-    return forkJoin(crops$);
+    return concat(...crops$).pipe(toArray());
   }
 
   /**
@@ -142,9 +163,13 @@ export class ChromeExtensionService implements OnDestroy {
   private crop(config: ICropConfig): Observable<string> {
     const resize_canvas = document.createElement('canvas');
     const orig_src = new Image();
-    orig_src.src = config.source;
 
-    return fromEvent(orig_src, 'load').pipe(
+    return of(1).pipe(
+      switchMap(() => {
+        orig_src.src = config.source;
+        return fromEvent(orig_src, 'load');
+      }),
+
       map(() => {
         resize_canvas.width = config.width;
         resize_canvas.height = config.height;
@@ -161,7 +186,7 @@ export class ChromeExtensionService implements OnDestroy {
             config.width,
             config.height
           );
-        return resize_canvas.toDataURL('image/png').toString();
+        return resize_canvas.toDataURL('image/png');
       })
     );
   }
