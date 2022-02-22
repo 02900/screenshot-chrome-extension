@@ -75,11 +75,11 @@ export class AppComponent implements OnInit {
 
             return of([base64]);
           }),
-          switchMap((images: string[]) => {
+          switchMap((frames: string[]) => {
             if (captureConfig.type === CaptureType.RECORD) {
               const config: IRecordInput = {
                 canvas: this.canvas.nativeElement,
-                images,
+                frames: frames,
                 device,
                 fps: captureConfig.fps ?? 10
               };
@@ -87,7 +87,7 @@ export class AppComponent implements OnInit {
               return this.recordCanvas.init(config);
             }
 
-            return this.chromeExtension.downloadWrapper(images, device);
+            return this.chromeExtension.downloadWrapper(frames, device);
           }),
           take(1)
         )

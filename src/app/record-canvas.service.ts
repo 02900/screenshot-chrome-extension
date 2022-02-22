@@ -1,5 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Observable, Subject, switchMap, take, fromEvent } from 'rxjs';
+import {
+  Observable,
+  Subject,
+  BehaviorSubject,
+  switchMap,
+  take,
+  fromEvent,
+} from 'rxjs';
 import { ChromeExtensionService } from './chrome-extension.service';
 import { IDownloadConfig, IRecordInput } from './app.types';
 
@@ -9,17 +16,16 @@ const ONE_SECOND = 1000;
   providedIn: 'root',
 })
 export class RecordCanvasService {
-  readonly startFrame = 0;
+  readonly totalFrames$: BehaviorSubject<number> = new BehaviorSubject(0);
+  readonly currentFrame$: BehaviorSubject<number> = new BehaviorSubject(0);
 
-  forwards = true;
-  endFrame!: number;
-  framesLoaded!: number;
   currentFrame!: number;
   frameStep!: number;
   fps!: number;
-  frames: HTMLImageElement[] = [];
 
-  images!: string[];
+  frames!: string[];
+  images!: HTMLImageElement[];
+
   canvas!: HTMLCanvasElement;
   context!: CanvasRenderingContext2D | null;
 
@@ -31,11 +37,11 @@ export class RecordCanvasService {
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
   init(config: IRecordInput): Observable<void> {
-    this.images = config.images;
+    this.frames = config.frames;
+    this.images = [];
 
-    this.framesLoaded = 0;
-    this.currentFrame = this.startFrame;
-    this.endFrame = this.images.length - 1;
+    this.currentFrame = 0;
+    this.totalFrames$.next(this.frames.length);
 
     this.fps = config.fps;
     this.frameStep = ONE_SECOND / this.fps;
@@ -95,17 +101,15 @@ export class RecordCanvasService {
 
   private loadFrames(): Subject<void> {
     const subject = new Subject<void>();
+    let imagesLoaded: number = 0;
 
-    for (let i = this.startFrame; i <= this.endFrame; i++) {
-      this.frames[i] = new Image();
-      this.frames[i].src = this.images[i];
+    for (let i = 0; i < this.frames.length; i++) {
+      this.images[i] = new Image();
+      this.images[i].src = this.frames[i];
 
-      fromEvent(this.frames[i], 'load').subscribe(() => {
-        this.framesLoaded++;
-        const loadedAllFrames =
-          this.framesLoaded === this.endFrame - this.startFrame;
-
-        if (loadedAllFrames) subject.next();
+      fromEvent(this.images[i], 'load').subscribe(() => {
+        const loadedAll = ++imagesLoaded === this.frames.length;
+        if (loadedAll) subject.next();
       });
     }
 
@@ -113,24 +117,17 @@ export class RecordCanvasService {
   }
 
   private async frameAnimation() {
-    this.context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.context?.drawImage(this.frames[this.currentFrame], 0, 0);
-
-    await this.timer(this.frameStep);
-
-    if (this.currentFrame == this.endFrame) {
-      this.forwards = false;
-
-      if (this.mediaRecorder.state === 'recording') {
-        this.mediaRecorder.stop();
-      }
+    while (this.currentFrame < this.frames.length) {
+      this.context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.context?.drawImage(this.images[this.currentFrame], 0, 0);
+      this.currentFrame$.next(++this.currentFrame);
+      await this.timer(this.frameStep);
     }
 
-    if (this.currentFrame == this.startFrame) {
-      this.forwards = true;
-    }
+    this.currentFrame$.next(++this.currentFrame);
 
-    this.forwards ? this.currentFrame++ : this.currentFrame--;
-    this.frameAnimation();
+    if (this.mediaRecorder.state === 'recording') {
+      this.mediaRecorder.stop();
+    }
   }
 }

@@ -47,7 +47,7 @@ export interface ICropConfig {
 
 export interface IRecordInput {
   canvas: HTMLCanvasElement,
-  images: string[],
+  frames: string[],
   device: IDevice,
   fps: number
 }

@@ -3,13 +3,14 @@ import {
   ChangeDetectionStrategy,
   Output,
   EventEmitter,
-  Input,
   ChangeDetectorRef,
   OnInit,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ChromeExtensionService } from '../../chrome-extension.service';
+import { RecordCanvasService } from '../../record-canvas.service';
 import { IRecorderConfig, RecordStatus } from '../../app.types';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-recorder',
@@ -21,6 +22,10 @@ export class RecorderComponent implements OnInit {
   @Output() requestRecord = new EventEmitter<IRecorderConfig>();
 
   recordStatus: RecordStatus = RecordStatus.readyToStart;
+  progressScreenshot: number = 0;
+  progressRecord: number = 0;
+
+  readonly unsubscribe$ = new Subject<void>();
 
   readonly formRecorder = this.fb.group({
     scaleFactor: [0.6, Validators.required],
@@ -30,20 +35,42 @@ export class RecorderComponent implements OnInit {
 
   constructor(
     readonly chromeExtension: ChromeExtensionService,
+    readonly recordCanvas: RecordCanvasService,
     private readonly fb: FormBuilder,
     private readonly cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
-    this.chromeExtension.currentFrame$.subscribe(() => {
-      if (this.recordStatus === RecordStatus.takingScreenshot)
-        this.recordStatus = RecordStatus.processingFrames;
-      this.cdr.detectChanges();
-    });
+    this.listenerProcessingFrames();
+    this.listenerGeneratingVideo();
   }
 
   submit() {
     this.requestRecord.emit(this.formRecorder.value);
     this.recordStatus = RecordStatus.takingScreenshot;
+  }
+
+  private listenerProcessingFrames() {
+    this.chromeExtension.currentFrame$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((progress) => {
+        if (this.recordStatus === RecordStatus.takingScreenshot)
+          this.recordStatus = RecordStatus.processingFrames;
+
+        this.progressScreenshot = progress;
+        this.cdr.detectChanges();
+      });
+  }
+
+  private listenerGeneratingVideo() {
+    this.recordCanvas.currentFrame$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe((progress) => {
+        if (this.recordStatus === RecordStatus.processingFrames)
+          this.recordStatus = RecordStatus.generatingVideo;
+
+        this.progressRecord = progress;
+        this.cdr.detectChanges();
+      });
   }
 }
