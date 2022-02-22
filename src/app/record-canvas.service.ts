@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { fromEvent, Observable, Subject, switchMap, take } from 'rxjs';
+import { Observable, Subject, switchMap, take, fromEvent } from 'rxjs';
 import { ChromeExtensionService } from './chrome-extension.service';
 import { IDownloadConfig, IRecordInput } from './app.types';
 
@@ -10,6 +10,8 @@ const ONE_SECOND = 1000;
 })
 export class RecordCanvasService {
   readonly startFrame = 0;
+
+  forwards = true;
   endFrame!: number;
   framesLoaded!: number;
   currentFrame!: number;
@@ -21,7 +23,7 @@ export class RecordCanvasService {
   canvas!: HTMLCanvasElement;
   context!: CanvasRenderingContext2D | null;
 
-  forwards = true;
+  mediaRecorder!: MediaRecorder;
 
   private readonly timer = (ms: number) =>
     new Promise((res) => setTimeout(res, ms));
@@ -49,6 +51,12 @@ export class RecordCanvasService {
     this.canvas.setAttribute('width', width.toString());
     this.canvas.setAttribute('height', height.toString());
 
+    const stream = this.canvas.captureStream(this.fps);
+
+    this.mediaRecorder = new MediaRecorder(stream, {
+      mimeType: 'video/webm',
+    });
+
     return this.loadFrames().pipe(
       switchMap(() => {
         this.frameAnimation();
@@ -70,23 +78,13 @@ export class RecordCanvasService {
     const subject = new Subject<string>();
     const recordedChunks: any[] = [];
 
-    const stream = this.canvas.captureStream(this.fps);
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm',
-    });
+    this.mediaRecorder.start();
 
-    const animationTime = this.images.length * this.frameStep;
-    mediaRecorder.start(animationTime);
-
-    mediaRecorder.ondataavailable = (event) => {
+    this.mediaRecorder.ondataavailable = (event) => {
       recordedChunks.push(event.data);
-      // after stop `dataavilable` event run one more time
-      if (mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-      }
     };
 
-    mediaRecorder.onstop = (event) => {
+    this.mediaRecorder.onstop = (event) => {
       const blob = new Blob(recordedChunks, { type: 'video/webm' });
       const url = URL.createObjectURL(blob);
       subject.next(url);
@@ -122,6 +120,10 @@ export class RecordCanvasService {
 
     if (this.currentFrame == this.endFrame) {
       this.forwards = false;
+
+      if (this.mediaRecorder.state === 'recording') {
+        this.mediaRecorder.stop();
+      }
     }
 
     if (this.currentFrame == this.startFrame) {
