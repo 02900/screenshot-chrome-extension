@@ -124,7 +124,7 @@ export class ChromeExtensionService implements OnDestroy {
     offset: number = 5
   ): Observable<string[]> {
     const urlPrefix = 'data:application/octet-stream;base64,';
-    let crops$: Observable<string>[] = [];
+    const crops$: Observable<string>[] = [];
     const img = `${urlPrefix}${base64}`;
     const scaleFactor = device.deviceScaleFactor;
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { fromEvent, Observable, Subject, switchMap, take } from 'rxjs';
-import { IDownloadConfig, IRecordInput } from './app.types';
 import { ChromeExtensionService } from './chrome-extension.service';
+import { IDownloadConfig, IRecordInput } from './app.types';
 
 const ONE_SECOND = 1000;
 
@@ -19,12 +19,9 @@ export class RecordCanvasService {
 
   images!: string[];
   canvas!: HTMLCanvasElement;
+  context!: CanvasRenderingContext2D | null;
 
-  loop = true;
-  pingPong = true;
   forwards = true;
-
-  requestID!: number;
 
   private readonly timer = (ms: number) =>
     new Promise((res) => setTimeout(res, ms));
@@ -32,7 +29,6 @@ export class RecordCanvasService {
   constructor(private readonly chromeExtension: ChromeExtensionService) { }
 
   init(config: IRecordInput): Observable<void> {
-    this.requestID = -1;
     this.images = config.images;
 
     this.framesLoaded = 0;
@@ -48,6 +44,8 @@ export class RecordCanvasService {
     const height = device.height * scaleFactor;
 
     this.canvas = config.canvas;
+    this.context = this.canvas.getContext('2d');
+
     this.canvas.setAttribute('width', width.toString());
     this.canvas.setAttribute('height', height.toString());
 
@@ -117,33 +115,20 @@ export class RecordCanvasService {
   }
 
   private async frameAnimation() {
-    const context = this.canvas.getContext('2d');
-
-    context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    context?.drawImage(this.frames[this.currentFrame], 0, 0);
+    this.context?.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context?.drawImage(this.frames[this.currentFrame], 0, 0);
 
     await this.timer(this.frameStep);
 
     if (this.currentFrame == this.endFrame) {
-      if (!this.loop) cancelAnimationFrame(this.requestID);
-
-      if (this.pingPong) {
-        this.forwards = false; // Go backwards
-      } else {
-        this.currentFrame = this.startFrame; // Start over
-      }
-    } else if (this.currentFrame == this.startFrame) {
-      if (this.pingPong) {
-        this.forwards = true;
-      }
+      this.forwards = false;
     }
 
-    if (this.forwards) {
-      this.currentFrame++;
-    } else {
-      this.currentFrame--;
+    if (this.currentFrame == this.startFrame) {
+      this.forwards = true;
     }
 
-    this.requestID = requestAnimationFrame(() => this.frameAnimation());
+    this.forwards ? this.currentFrame++ : this.currentFrame--;
+    this.frameAnimation();
   }
 }
