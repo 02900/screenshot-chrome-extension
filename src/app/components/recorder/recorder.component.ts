@@ -5,6 +5,7 @@ import {
   EventEmitter,
   ChangeDetectorRef,
   OnInit,
+  OnDestroy,
 } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { ChromeExtensionService } from '../../chrome-extension.service';
@@ -18,7 +19,7 @@ import { Subject, takeUntil } from 'rxjs';
   styleUrls: ['./recorder.component.scss'],
   changeDetection: ChangeDetectionStrategy.Default,
 })
-export class RecorderComponent implements OnInit {
+export class RecorderComponent implements OnInit, OnDestroy {
   @Output() requestRecord = new EventEmitter<IRecorderConfig>();
 
   recordStatus: RecordStatus = RecordStatus.readyToStart;
@@ -41,13 +42,30 @@ export class RecorderComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
+    this.listenerTakingScreenshot();
     this.listenerProcessingFrames();
     this.listenerGeneratingVideo();
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribe$.next();
+    this.unsubscribe$.complete();
   }
 
   submit() {
     this.requestRecord.emit(this.formRecorder.value);
     this.recordStatus = RecordStatus.takingScreenshot;
+  }
+
+  private listenerTakingScreenshot() {
+    this.chromeExtension.takingScreenshot$
+      .pipe(takeUntil(this.unsubscribe$))
+      .subscribe(() => {
+        if (this.recordStatus === RecordStatus.generatingVideo)
+          this.recordStatus = RecordStatus.takingScreenshot;
+
+        this.cdr.detectChanges();
+      });
   }
 
   private listenerProcessingFrames() {

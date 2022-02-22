@@ -28,6 +28,7 @@ import {
 export class ChromeExtensionService implements OnDestroy {
   readonly totalFrames$: BehaviorSubject<number> = new BehaviorSubject(0);
   readonly currentFrame$: BehaviorSubject<number> = new BehaviorSubject(0);
+  readonly takingScreenshot$: BehaviorSubject<number> = new BehaviorSubject(0);
 
   private tabId!: ITabID;
   private extension!: Extension;
@@ -107,6 +108,8 @@ export class ChromeExtensionService implements OnDestroy {
       format: this.extension,
       fromSurface: true,
     };
+
+    this.takingScreenshot$.next(0);
 
     return new Observable((observer) => {
       chrome.debugger.sendCommand(

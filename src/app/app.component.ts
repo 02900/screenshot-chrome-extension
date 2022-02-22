@@ -94,6 +94,6 @@ export class AppComponent implements OnInit {
       );
     }
 
-    concat(...obs$).subscribe(() => this.chromeExtension.detach());
+    concat(...obs$).subscribe();
   }
 }

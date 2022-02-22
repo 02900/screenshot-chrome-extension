@@ -57,5 +57,5 @@ const desktopXXXL: IDevice = {
 };
 
 export const devices: IDevice[] = [
-  desktopXXXL
+  iphone5, iphoneXR
 ];
