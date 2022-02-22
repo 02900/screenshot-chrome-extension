@@ -60,7 +60,7 @@ export class RecordCanvasService {
     const stream = this.canvas.captureStream(this.fps);
 
     this.mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm',
+      mimeType: 'video/webm; codecs=vp9',
     });
 
     return this.loadFrames().pipe(
