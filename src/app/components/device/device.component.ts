@@ -5,6 +5,7 @@ import {
   Input,
 } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { PresetDevicesService } from '../../preset-devices.service';
 import { IDevice } from '../../app.types';
 
 @Component({
@@ -28,7 +29,10 @@ export class DeviceComponent implements OnInit {
     return this.deviceForm.get('id')?.value;
   }
 
-  constructor(private readonly fb: FormBuilder) { }
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly presetDevices: PresetDevicesService
+  ) { }
 
   ngOnInit(): void {
     if (this.device.id !== 'newDevice') {
@@ -38,5 +42,13 @@ export class DeviceComponent implements OnInit {
       this.deviceForm.get('width')?.disable();
       this.deviceForm.get('height')?.disable();
     }
+  }
+
+  save() {
+    this.presetDevices.addNewDevice(this.device);
+  }
+
+  delete() {
+    this.presetDevices.deleteDevice(this.device);
   }
 }

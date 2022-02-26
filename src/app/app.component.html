@@ -1,8 +1,8 @@
 <app-select-device (addDevice)="addDevice()" (triggerDevice)="triggerDevice($event)"></app-select-device>
 
-<p>Devices:</p>
+<p>Devices</p>
 
-<app-device *ngFor="let device of devices" [device]="device"></app-device>
+<app-device *ngFor="let device of selectedDevices" [device]="device"></app-device>
 
 <hr />
 

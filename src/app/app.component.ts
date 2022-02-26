@@ -1,5 +1,21 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { concat, switchMap, Observable, take, tap, of, delay, map } from 'rxjs';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
+import {
+  concat,
+  switchMap,
+  Observable,
+  take,
+  tap,
+  of,
+  delay,
+  map,
+  Subject,
+} from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
 import {
@@ -22,12 +38,13 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
-  devices: IDevice[] = [];
+  selectedDevices: IDevice[] = [];
   private readonly extension: Extension = Extension.PNG;
 
   constructor(
     private readonly recordCanvas: RecordCanvasService,
-    private readonly chromeExtension: ChromeExtensionService
+    private readonly chromeExtension: ChromeExtensionService,
+    private readonly cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -41,19 +58,19 @@ export class AppComponent implements OnInit {
       height: 1440,
       deviceScaleFactor: 1,
       mobile: false,
-    }
-    this.devices.push(newDevice);
+    };
+    this.selectedDevices.push(newDevice);
+    this.cdr.detectChanges();
   }
 
   triggerDevice(targetDevice: IDevice) {
-    const index = this.devices.findIndex((device: IDevice) => device.id === targetDevice.id);
+    const index = this.selectedDevices.findIndex(
+      (device: IDevice) => device.id === targetDevice.id
+    );
 
-    if (index > -1) {
-      this.devices.splice(index, 1);
-      return;
-    }
-
-    this.devices.push(targetDevice);
+    if (index > -1) this.selectedDevices.splice(index, 1);
+    else this.selectedDevices.push(targetDevice);
+    this.cdr.detectChanges();
   }
 
   takeScreenshot(type: CaptureType) {
@@ -91,8 +108,8 @@ export class AppComponent implements OnInit {
 
     let originalViewport: IDevice;
 
-    for (let i = 0; i < this.devices.length; i++) {
-      const device = this.devices[i];
+    for (let i = 0; i < this.selectedDevices.length; i++) {
+      const device = this.selectedDevices[i];
       device.deviceScaleFactor = captureConfig.scaleFactor;
 
       obs$.push(
