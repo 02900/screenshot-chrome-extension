@@ -1,3 +1,12 @@
+<p>Devices:</p>
+
+<app-device *ngFor="let device of devices" [device]="device"></app-device>
+
+<hr />
+
 <app-screenshot (takeScreenshot)="takeScreenshot($event)" (takeFrames)="takeFrames(2, $event)"></app-screenshot>
+
+<hr />
+
 <app-recorder (requestRecord)="generateRecord($event)"></app-recorder>
 <canvas #canvasElement></canvas>

@@ -24,7 +24,7 @@ const iPadMini: IDevice = {
   deviceScaleFactor: 1,
 };
 
-const desktopLG: IDevice = {
+const d1024x576: IDevice = {
   id: 'desktopLG',
   mobile: false,
   width: 1024,
@@ -32,7 +32,7 @@ const desktopLG: IDevice = {
   deviceScaleFactor: 1,
 };
 
-const desktopXL: IDevice = {
+const d1366x768: IDevice = {
   id: 'desktopXL',
   mobile: false,
   width: 1366,
@@ -40,7 +40,7 @@ const desktopXL: IDevice = {
   deviceScaleFactor: 1,
 };
 
-const desktopXXL: IDevice = {
+const d1440x900: IDevice = {
   id: 'desktopXXL',
   mobile: false,
   width: 1440,
@@ -48,7 +48,7 @@ const desktopXXL: IDevice = {
   deviceScaleFactor: 1,
 };
 
-const desktopXXXL: IDevice = {
+const d1920x1080: IDevice = {
   id: 'desktopXXXL',
   mobile: false,
   width: 1920,

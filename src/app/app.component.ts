@@ -23,6 +23,7 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
+  readonly devices = devices;
   private readonly extension: Extension = Extension.PNG;
 
   constructor(
