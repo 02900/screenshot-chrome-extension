@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { concat, switchMap, Observable, take, tap, of, delay } from 'rxjs';
+import { concat, switchMap, Observable, take, tap, of, delay, map } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
 import {
@@ -8,6 +8,7 @@ import {
   IRecorderConfig,
   CaptureType,
   ICaptureConfig,
+  IDevice,
 } from './app.types';
 import { devices } from './devices';
 
@@ -39,13 +40,15 @@ export class AppComponent implements OnInit {
       scaleFactor: config.scaleFactor,
       offset: config.offset,
       fps: config.fps,
-    }
+    };
 
     this.generate(captureConfig);
   }
 
   async generate(captureConfig: ICaptureConfig) {
     const obs$: Observable<any>[] = [];
+
+    let originalDevice: IDevice;
 
     for (let i = 0; i < devices.length; i++) {
       const device = devices[i];
@@ -54,7 +57,16 @@ export class AppComponent implements OnInit {
       obs$.push(
         this.chromeExtension.hideScrollbars().pipe(
           tap(() => console.log('current turn: ', device.id)),
-          switchMap(() => {
+          switchMap(() => this.chromeExtension.getViewportSize()),
+          switchMap((viewportSize: any) => {
+            originalDevice = {
+              id: '',
+              width: viewportSize.clientWidth,
+              height: viewportSize.clientHeight,
+              deviceScaleFactor: 1,
+              mobile: device.mobile,
+            };
+
             const resizeToFullScreen =
               captureConfig.type === CaptureType.FULLSIZE_SCREENSHOT ||
               captureConfig.type === CaptureType.FRAMES ||
@@ -65,13 +77,20 @@ export class AppComponent implements OnInit {
               .pipe(delay(delayResize));
           }),
           switchMap(() => this.chromeExtension.screenshot()),
+          switchMap((base64: string) =>
+            this.chromeExtension.resize(originalDevice).pipe(map(() => base64))
+          ),
           switchMap((base64: string) => {
             const toCrop =
               captureConfig.type === CaptureType.RECORD ||
               captureConfig.type === CaptureType.FRAMES;
 
             if (toCrop)
-              return this.chromeExtension.cropWrapper(base64, device, captureConfig.offset);
+              return this.chromeExtension.cropWrapper(
+                base64,
+                device,
+                captureConfig.offset
+              );
 
             return of([base64]);
           }),
@@ -81,7 +100,7 @@ export class AppComponent implements OnInit {
                 canvas: this.canvas.nativeElement,
                 frames: frames,
                 device,
-                fps: captureConfig.fps ?? 10
+                fps: captureConfig.fps ?? 10,
               };
 
               return this.recordCanvas.init(config);

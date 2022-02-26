@@ -54,6 +54,16 @@ export class ChromeExtensionService implements OnDestroy {
     });
   }
 
+  getViewportSize(): Observable<any> {
+    const command = 'Page.getLayoutMetrics';
+
+    return new Observable((observer) => {
+      chrome.debugger.sendCommand(this.tabId, command, undefined, (x: any) =>
+        observer.next(x.cssVisualViewport)
+      );
+    });
+  }
+
   hideScrollbars(): Observable<void> {
     const command = 'Emulation.setScrollbarsHidden';
 
@@ -82,7 +92,7 @@ export class ChromeExtensionService implements OnDestroy {
     );
   }
 
-  private resize(device: IDevice): Observable<void> {
+  resize(device: IDevice): Observable<void> {
     const command = 'Emulation.setDeviceMetricsOverride';
 
     return new Observable((observer) => {
