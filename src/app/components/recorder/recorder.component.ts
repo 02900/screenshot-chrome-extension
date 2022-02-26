@@ -7,7 +7,7 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
-import { FormBuilder, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ChromeExtensionService } from '../../chrome-extension.service';
 import { RecordCanvasService } from '../../record-canvas.service';
 import { IRecorderConfig, RecordStatus } from '../../app.types';
@@ -28,7 +28,7 @@ export class RecorderComponent implements OnInit, OnDestroy {
 
   readonly unsubscribe$ = new Subject<void>();
 
-  readonly formRecorder = this.fb.group({
+  readonly formRecorder: FormGroup = this.fb.group({
     scaleFactor: [0.6, Validators.required],
     offset: [16, Validators.required],
     fps: [30, Validators.required],

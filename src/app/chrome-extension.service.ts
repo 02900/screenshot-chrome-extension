@@ -205,15 +205,15 @@ export class ChromeExtensionService implements OnDestroy {
     );
   }
 
-  downloadWrapper(urls: string[], resolution: IDevice): Observable<void[]> {
+  downloadWrapper(frames: string[], resolution: IDevice): Observable<void[]> {
+    const maxDownloads = 10;
     const downloads: Observable<void>[] = [];
 
-    for (let i = 0; i < urls.length; i++) {
+    for (let i = 0; i < frames.length && i < maxDownloads; i++) {
       const config: IDownloadConfig = {
         filename: `${resolution.id}.${this.extension}`,
-        url: urls[i],
+        url: frames[i],
       };
-
       downloads.push(this.download(config).pipe(take(1)));
     }
 

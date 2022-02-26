@@ -1,0 +1,12 @@
+<button (click)="emitRequest(0)">Take a screenshot</button>
+<button (click)="emitRequest(1)">Take a full screenshot</button>
+
+<form [formGroup]="formFrames" (ngSubmit)="emitRequest(2, +frames.value)">
+  <div class="pair-value">
+    <label for="frames">Split into frames</label>
+    <input #frames id="frames" type="range" formControlName="frames" min="1" max="8" step="1" />
+    <span>{{ frames.value }}</span>
+  </div>
+
+  <button type="submit">Capture frames</button>
+</form>

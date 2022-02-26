@@ -34,6 +34,26 @@ export class AppComponent implements OnInit {
     this.chromeExtension.init(this.extension);
   }
 
+  takeScreenshot(type: CaptureType) {
+    const captureConfig: ICaptureConfig = {
+      type,
+      scaleFactor: 1,
+    };
+
+    this.generate(captureConfig);
+  }
+
+  takeFrames(type: CaptureType, frames: number) {
+    const captureConfig: ICaptureConfig = {
+      type,
+      scaleFactor: 1,
+      offset: frames,
+
+    };
+
+    this.generate(captureConfig);
+  }
+
   generateRecord(config: IRecorderConfig) {
     const captureConfig: ICaptureConfig = {
       type: CaptureType.RECORD,
@@ -45,10 +65,10 @@ export class AppComponent implements OnInit {
     this.generate(captureConfig);
   }
 
-  async generate(captureConfig: ICaptureConfig) {
+  private async generate(captureConfig: ICaptureConfig) {
     const obs$: Observable<any>[] = [];
 
-    let originalDevice: IDevice;
+    let originalViewport: IDevice;
 
     for (let i = 0; i < devices.length; i++) {
       const device = devices[i];
@@ -59,7 +79,7 @@ export class AppComponent implements OnInit {
           tap(() => console.log('current turn: ', device.id)),
           switchMap(() => this.chromeExtension.getViewportSize()),
           switchMap((viewportSize: any) => {
-            originalDevice = {
+            originalViewport = {
               id: '',
               width: viewportSize.clientWidth,
               height: viewportSize.clientHeight,
@@ -78,21 +98,23 @@ export class AppComponent implements OnInit {
           }),
           switchMap(() => this.chromeExtension.screenshot()),
           switchMap((base64: string) =>
-            this.chromeExtension.resize(originalDevice).pipe(map(() => base64))
+            this.chromeExtension.resize(originalViewport).pipe(map(() => base64))
           ),
           switchMap((base64: string) => {
-            const toCrop =
+            const urlPrefix = 'data:application/octet-stream;base64,';
+
+            const createFrames =
               captureConfig.type === CaptureType.RECORD ||
               captureConfig.type === CaptureType.FRAMES;
 
-            if (toCrop)
+            if (createFrames)
               return this.chromeExtension.cropWrapper(
                 base64,
                 device,
                 captureConfig.offset
               );
 
-            return of([base64]);
+            return of([`${urlPrefix}${base64}`]);
           }),
           switchMap((frames: string[]) => {
             if (captureConfig.type === CaptureType.RECORD) {
