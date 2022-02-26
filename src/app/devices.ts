@@ -1,4 +1,4 @@
-import { IDevice } from "./app.types";
+import { IDevice } from './app.types';
 
 const iphone5: IDevice = {
   id: 'iPhone5',
@@ -25,7 +25,7 @@ const iPadMini: IDevice = {
 };
 
 const d1024x576: IDevice = {
-  id: 'desktopLG',
+  id: 'd1024x576',
   mobile: false,
   width: 1024,
   height: 576,
@@ -33,7 +33,7 @@ const d1024x576: IDevice = {
 };
 
 const d1366x768: IDevice = {
-  id: 'desktopXL',
+  id: 'd1366x768',
   mobile: false,
   width: 1366,
   height: 768,
@@ -41,7 +41,7 @@ const d1366x768: IDevice = {
 };
 
 const d1440x900: IDevice = {
-  id: 'desktopXXL',
+  id: 'd1440x900',
   mobile: false,
   width: 1440,
   height: 900,
@@ -49,7 +49,7 @@ const d1440x900: IDevice = {
 };
 
 const d1920x1080: IDevice = {
-  id: 'desktopXXXL',
+  id: 'd1920x1080',
   mobile: false,
   width: 1920,
   height: 1080,
@@ -57,5 +57,11 @@ const d1920x1080: IDevice = {
 };
 
 export const devices: IDevice[] = [
-  iphone5, iphoneXR
+  iphone5,
+  iphoneXR,
+  iPadMini,
+  d1024x576,
+  d1366x768,
+  d1440x900,
+  d1920x1080,
 ];

@@ -10,7 +10,6 @@ import {
   ICaptureConfig,
   IDevice,
 } from './app.types';
-import { devices } from './devices';
 
 const delayResize: number = 300;
 
@@ -23,7 +22,7 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
-  readonly devices = devices;
+  devices: IDevice[] = [];
   private readonly extension: Extension = Extension.PNG;
 
   constructor(
@@ -33,6 +32,17 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.chromeExtension.init(this.extension);
+  }
+
+  triggerDevice(targetDevice: IDevice) {
+    const index = this.devices.findIndex((device: IDevice) => device.id === targetDevice.id);
+
+    if (index > -1) {
+      this.devices.splice(index, 1);
+      return;
+    }
+
+    this.devices.push(targetDevice);
   }
 
   takeScreenshot(type: CaptureType) {
@@ -70,8 +80,8 @@ export class AppComponent implements OnInit {
 
     let originalViewport: IDevice;
 
-    for (let i = 0; i < devices.length; i++) {
-      const device = devices[i];
+    for (let i = 0; i < this.devices.length; i++) {
+      const device = this.devices[i];
       device.deviceScaleFactor = captureConfig.scaleFactor;
 
       obs$.push(
@@ -98,7 +108,9 @@ export class AppComponent implements OnInit {
           }),
           switchMap(() => this.chromeExtension.screenshot()),
           switchMap((base64: string) =>
-            this.chromeExtension.resize(originalViewport).pipe(map(() => base64))
+            this.chromeExtension
+              .resize(originalViewport)
+              .pipe(map(() => base64))
           ),
           switchMap((base64: string) => {
             const urlPrefix = 'data:application/octet-stream;base64,';
@@ -111,7 +123,7 @@ export class AppComponent implements OnInit {
               return this.chromeExtension.cropWrapper(
                 base64,
                 device,
-                captureConfig.frames || 2,
+                captureConfig.frames || 2
               );
 
             return of([`${urlPrefix}${base64}`]);

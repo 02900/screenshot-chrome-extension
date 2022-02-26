@@ -1,0 +1,5 @@
+<p>Select devices:</p>
+
+<button *ngFor="let device of devices" (click)="triggerDevice.emit(device)">
+  {{ device.id }}
+</button>

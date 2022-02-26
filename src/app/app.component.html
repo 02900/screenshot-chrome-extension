@@ -1,3 +1,5 @@
+<app-select-device (triggerDevice)="triggerDevice($event)"></app-select-device>
+
 <p>Devices:</p>
 
 <app-device *ngFor="let device of devices" [device]="device"></app-device>
