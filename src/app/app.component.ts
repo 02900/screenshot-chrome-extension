@@ -34,6 +34,17 @@ export class AppComponent implements OnInit {
     this.chromeExtension.init(this.extension);
   }
 
+  addDevice() {
+    const newDevice: IDevice = {
+      id: 'newDevice',
+      width: 960,
+      height: 1440,
+      deviceScaleFactor: 1,
+      mobile: false,
+    }
+    this.devices.push(newDevice);
+  }
+
   triggerDevice(targetDevice: IDevice) {
     const index = this.devices.findIndex((device: IDevice) => device.id === targetDevice.id);
 

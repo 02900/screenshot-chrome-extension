@@ -10,5 +10,6 @@ import { devices } from '../../devices';
 })
 export class SelectDeviceComponent {
   @Output() triggerDevice = new EventEmitter<IDevice>();
+  @Output() addDevice = new EventEmitter<void>();
   readonly devices = devices;
 }

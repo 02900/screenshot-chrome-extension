@@ -3,3 +3,5 @@
 <button *ngFor="let device of devices" (click)="triggerDevice.emit(device)">
   {{ device.id }}
 </button>
+
+<button (click)="addDevice.emit()">+</button>

@@ -14,7 +14,7 @@ import { IDevice } from '../../app.types';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DeviceComponent implements OnInit {
-  @Input() device?: IDevice;
+  @Input() device!: IDevice;
 
   deviceForm: FormGroup = this.fb.group({
     id: ['New device', Validators.required],
@@ -31,7 +31,7 @@ export class DeviceComponent implements OnInit {
   constructor(private readonly fb: FormBuilder) { }
 
   ngOnInit(): void {
-    if (this.device) {
+    if (this.device.id !== 'newDevice') {
       this.deviceForm.setValue(this.device);
       this.deviceForm.get('id')?.disable();
       this.deviceForm.get('mobile')?.disable();
