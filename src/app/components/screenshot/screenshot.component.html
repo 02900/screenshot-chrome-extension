@@ -3,7 +3,7 @@
 
 <form [formGroup]="formFrames" (ngSubmit)="emitRequest(2, +frames.value)">
   <div class="pair-value">
-    <label for="frames">Split into frames</label>
+    <label for="frames">Frames</label>
     <input #frames id="frames" type="range" formControlName="frames" min="1" max="8" step="1" />
     <span>{{ frames.value }}</span>
   </div>

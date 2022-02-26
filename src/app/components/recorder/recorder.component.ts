@@ -30,7 +30,7 @@ export class RecorderComponent implements OnInit, OnDestroy {
 
   readonly formRecorder: FormGroup = this.fb.group({
     scaleFactor: [0.6, Validators.required],
-    offset: [16, Validators.required],
+    frames: [600, Validators.required],
     fps: [30, Validators.required],
   });
 

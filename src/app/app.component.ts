@@ -47,8 +47,7 @@ export class AppComponent implements OnInit {
     const captureConfig: ICaptureConfig = {
       type,
       scaleFactor: 1,
-      offset: frames,
-
+      frames: frames,
     };
 
     this.generate(captureConfig);
@@ -58,7 +57,7 @@ export class AppComponent implements OnInit {
     const captureConfig: ICaptureConfig = {
       type: CaptureType.RECORD,
       scaleFactor: config.scaleFactor,
-      offset: config.offset,
+      frames: config.frames,
       fps: config.fps,
     };
 
@@ -111,7 +110,7 @@ export class AppComponent implements OnInit {
               return this.chromeExtension.cropWrapper(
                 base64,
                 device,
-                captureConfig.offset
+                captureConfig.frames || 2,
               );
 
             return of([`${urlPrefix}${base64}`]);

@@ -134,7 +134,7 @@ export class ChromeExtensionService implements OnDestroy {
   cropWrapper(
     base64: string,
     device: IDevice,
-    offset: number = 16
+    frames: number,
   ): Observable<string[]> {
     const urlPrefix = 'data:application/octet-stream;base64,';
     const crops$: Observable<string>[] = [];
@@ -150,8 +150,8 @@ export class ChromeExtensionService implements OnDestroy {
       height: device.height * scaleFactor,
     };
 
-    const frames =
-      ((this.contentHeight - device.height) * scaleFactor) / offset;
+    const offset =
+      ((this.contentHeight - device.height) * scaleFactor) / frames;
 
     this.totalFrames$.next(frames);
 
