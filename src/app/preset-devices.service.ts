@@ -21,12 +21,14 @@ export class PresetDevicesService {
     });
   }
 
-  addNewDevice(newDevice: IDevice) {
+  saveDevice(newDevice: IDevice) {
     const index = this.currentDevices.findIndex(
       (device: IDevice) => device.id === newDevice.id
     );
-    if (index !== -1) return;
-    this.currentDevices.push(newDevice);
+
+    if (index !== -1) this.currentDevices[index] = newDevice;
+    else this.currentDevices.push(newDevice);
+
     this.devices$.next(this.currentDevices);
     chrome.storage.sync.set({ savedDevices: this.currentDevices });
   }

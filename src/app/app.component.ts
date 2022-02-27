@@ -10,11 +10,9 @@ import {
   switchMap,
   Observable,
   take,
-  tap,
   of,
   delay,
   map,
-  Subject,
 } from 'rxjs';
 import { RecordCanvasService } from './record-canvas.service';
 import { ChromeExtensionService } from './chrome-extension.service';
@@ -38,7 +36,8 @@ export class AppComponent implements OnInit {
   @ViewChild('canvasElement', { static: true })
   canvas!: ElementRef<HTMLCanvasElement>;
 
-  selectedDevices: IDevice[] = [];
+  devices: IDevice[] = [];
+
   private readonly extension: Extension = Extension.PNG;
 
   constructor(
@@ -59,43 +58,43 @@ export class AppComponent implements OnInit {
       deviceScaleFactor: 1,
       mobile: false,
     };
-    this.selectedDevices.push(newDevice);
+
+    const index = this.devices.findIndex(
+      (device: IDevice) => device.id === newDevice.id
+    );
+
+    if (index !== -1) return;
+
+    this.devices.push(newDevice);
     this.cdr.detectChanges();
   }
 
   triggerDevice(targetDevice: IDevice) {
-    const index = this.selectedDevices.findIndex(
+    const index = this.devices.findIndex(
       (device: IDevice) => device.id === targetDevice.id
     );
 
-    if (index > -1) this.selectedDevices.splice(index, 1);
-    else this.selectedDevices.push(targetDevice);
+    if (index > -1) this.devices.splice(index, 1);
+    else this.devices.push(targetDevice);
     this.cdr.detectChanges();
   }
 
   takeScreenshot(type: CaptureType) {
-    const captureConfig: ICaptureConfig = {
+    this.generate({
       type,
-      scaleFactor: 1,
-    };
-
-    this.generate(captureConfig);
+    });
   }
 
   takeFrames(type: CaptureType, frames: number) {
-    const captureConfig: ICaptureConfig = {
+    this.generate({
       type,
-      scaleFactor: 1,
-      frames: frames,
-    };
-
-    this.generate(captureConfig);
+      frames,
+    });
   }
 
   generateRecord(config: IRecorderConfig) {
     const captureConfig: ICaptureConfig = {
       type: CaptureType.RECORD,
-      scaleFactor: config.scaleFactor,
       frames: config.frames,
       fps: config.fps,
     };
@@ -104,17 +103,15 @@ export class AppComponent implements OnInit {
   }
 
   private async generate(captureConfig: ICaptureConfig) {
-    const obs$: Observable<any>[] = [];
+    const obs$: Observable<void | void[]>[] = [];
 
     let originalViewport: IDevice;
 
-    for (let i = 0; i < this.selectedDevices.length; i++) {
-      const device = this.selectedDevices[i];
-      device.deviceScaleFactor = captureConfig.scaleFactor;
+    for (let i = 0; i < this.devices.length; i++) {
+      const device = this.devices[i];
 
       obs$.push(
         this.chromeExtension.hideScrollbars().pipe(
-          tap(() => console.log('current turn: ', device.id)),
           switchMap(() => this.chromeExtension.getViewportSize()),
           switchMap((viewportSize: any) => {
             originalViewport = {

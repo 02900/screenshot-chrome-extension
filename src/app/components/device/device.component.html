@@ -1,5 +1,5 @@
 <details>
-  <summary>{{deviceForm.get('id')?.value}}</summary>
+  <summary>{{ id }}</summary>
   <div [formGroup]="deviceForm" class="device">
     <div class="pair-value">
       <label [for]="id">Device id</label>
@@ -7,23 +7,23 @@
     </div>
 
     <div class="pair-value">
-      <label [for]="id+'-widht'">Device width</label>
-      <input [id]="id+'-widht'" type="number" formControlName="width" />
+      <label [for]="id + '-widht'">Device width</label>
+      <input [id]="id + '-widht'" type="number" formControlName="width" />
     </div>
 
     <div class="pair-value">
-      <label [for]="id+'-height'">Device height</label>
-      <input [id]="id+'-height'" type="number" formControlName="height" />
+      <label [for]="id + '-height'">Device height</label>
+      <input [id]="id + '-height'" type="number" formControlName="height" />
     </div>
 
     <div class="pair-value">
-      <label [for]="id+'-mobile'">Is mobile</label>
-      <input [id]="id+'-mobile'" type="checkbox" formControlName="mobile" />
+      <label [for]="id + '-mobile'">Is mobile</label>
+      <input [id]="id + '-mobile'" type="checkbox" formControlName="mobile" />
     </div>
 
     <div class="pair-value">
-      <label for="scale-factor">Scale factor</label>
-      <input #scaleFactor id="scale-factor" type="range" formControlName="deviceScaleFactor" min="0.5" max="1"
+      <label [for]="id + '-scale'">Scale factor</label>
+      <input #scaleFactor [id]="id + '-scale'" type="range" formControlName="deviceScaleFactor" min="0.5" max="1"
         step="0.1" />
       <span>{{ scaleFactor.value }}</span>
     </div>

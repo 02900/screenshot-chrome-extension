@@ -1,14 +1,26 @@
-<app-select-device (addDevice)="addDevice()" (triggerDevice)="triggerDevice($event)"></app-select-device>
+<app-select-device
+  (addDevice)="addDevice()"
+  (triggerDevice)="triggerDevice($event)"
+></app-select-device>
 
-<p>Devices</p>
+<div [hidden]="!devices.length">
+  <p>Devices</p>
+  <app-device *ngFor="let device of devices; index as i" [device]="device">
+  </app-device>
+</div>
 
-<app-device *ngFor="let device of selectedDevices" [device]="device"></app-device>
+<div [hidden]="!devices.length">
+  <hr />
+  <app-screenshot
+    (takeScreenshot)="takeScreenshot($event)"
+    (takeFrames)="takeFrames(2, $event)"
+  >
+  </app-screenshot>
+</div>
 
-<hr />
+<div [hidden]="!devices.length">
+  <hr />
+  <app-recorder (requestRecord)="generateRecord($event)"></app-recorder>
+</div>
 
-<app-screenshot (takeScreenshot)="takeScreenshot($event)" (takeFrames)="takeFrames(2, $event)"></app-screenshot>
-
-<hr />
-
-<app-recorder (requestRecord)="generateRecord($event)"></app-recorder>
 <canvas #canvasElement></canvas>

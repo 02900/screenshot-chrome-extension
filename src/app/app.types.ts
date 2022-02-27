@@ -61,7 +61,6 @@ export const enum CaptureType {
 
 export interface ICaptureConfig {
   type: CaptureType,
-  scaleFactor: number,
   frames?: number,
   fps?: number,
 }
@@ -74,7 +73,6 @@ export const enum RecordStatus {
 }
 
 export interface IRecorderConfig {
-  scaleFactor: number,
   frames: number,
   fps: number,
 }

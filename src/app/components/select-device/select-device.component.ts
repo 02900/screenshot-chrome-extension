@@ -20,7 +20,6 @@ import { Subject, takeUntil } from 'rxjs';
 export class SelectDeviceComponent implements OnInit, OnDestroy {
   @Output() triggerDevice = new EventEmitter<IDevice>();
   @Output() addDevice = new EventEmitter<void>();
-
   devices!: IDevice[];
 
   private readonly unsubscribe$ = new Subject<void>();
