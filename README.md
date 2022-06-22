@@ -2,6 +2,22 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 13.2.4.
 
+## Features
+
+- Take screenshot of viewport
+- Capture full page and split in multiple frames.
+- Record scroll down movement.
+
+## Demo
+
+https://user-images.githubusercontent.com/25335293/175095845-fbfb6fe6-becb-4cce-baae-912d0dc88023.mp4
+
+https://user-images.githubusercontent.com/25335293/175095851-0c34b532-f317-4ba8-a579-5fc5cc00de19.mp4
+
+https://user-images.githubusercontent.com/25335293/175095859-8e3ebbea-8fbf-4cc5-855e-36a1fee97ac9.mp4
+
+https://user-images.githubusercontent.com/25335293/175095857-258dfe22-51bf-4e34-abde-69c787d9b557.mp4
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
