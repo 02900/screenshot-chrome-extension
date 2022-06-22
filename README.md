@@ -20,7 +20,7 @@ https://user-images.githubusercontent.com/25335293/175095857-258dfe22-51bf-4e34-
 
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+Run `ng build --watch` and navigate to `chrome://extensions/` click on `Load unpacked` and select the application build `dist/screenshot-ce`. The app will automatically reload if you change any of the source files.
 
 ## Code scaffolding
 
@@ -39,5 +39,7 @@ Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.
 Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
 
 ## Further help
+
+Explanation and basic configuration of chrome extension in an Angular project https://www.justjeb.com/post/chrome-extension-with-angular-from-zero-to-a-little-hero
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
